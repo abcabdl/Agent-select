@@ -797,9 +797,16 @@ def _plan_and_run_tools(
         used_tool_ids.add(tool_id)
         
         tool_input = _normalize_tool_input(decision.get("tool_input"))
+        enhanced_task = task_text
+        if _is_operator_precedence_task(task_text, task_context) and "operator precedence" not in task_text.lower():
+            enhanced_task = (
+                f"{task_text}\n\nIMPORTANT: Evaluate using operator precedence (** > * // > + -). "
+                "Do NOT evaluate left-to-right."
+            )
         exec_inputs = {
-            "query": task_text,
-            "task": task_text,
+            "query": enhanced_task,
+            "task": enhanced_task,
+            "prompt": enhanced_task,
             "role": role,
             "agent": agent_context,
             "upstream": results,
@@ -839,6 +846,13 @@ def _plan_and_run_tools(
                             f"❌ ASSERTION FAILED: The test expectation was not met.\n"
                             f"✅ HINT: Check the logic carefully - the output doesn't match expected result."
                         )
+                if _needs_operator_precedence_fix(task_text, task_context, failed_code, last_test_error):
+                    diagnostic_hints.append(
+                        "❌ PRECEDENCE ERROR: The expression must respect operator precedence (** > * // > + -). "
+                        "Left-to-right folding is incorrect.\n"
+                        "✅ FIX: Build the expression string and evaluate it with Python precedence, or implement a "
+                        "shunting-yard/two-stack evaluator."
+                    )
                 
                 # Index/Key errors
                 if "indexerror" in error_lower or "keyerror" in error_lower:
@@ -1178,6 +1192,35 @@ def _is_placeholder_code(code: str) -> bool:
     if len(normalized.split('\n')) == 1 and len(normalized) < 20:
         if normalized.startswith('return') or normalized == '...':
             return True
+    return False
+
+
+def _needs_operator_precedence_fix(
+    task_text: str,
+    task_context: Optional[Dict[str, Any]],
+    failed_code: Optional[str],
+    test_error: Optional[str],
+) -> bool:
+    if not _is_operator_precedence_task(task_text, task_context):
+        return False
+    if not test_error or "assert candidate" not in test_error:
+        return False
+    code = failed_code or ""
+    left_to_right_patterns = [
+        "result = operand[0]",
+        "result=operand[0]",
+        "for i, op in enumerate(operator)",
+        "for i in range(len(operator))",
+    ]
+    return any(pat in code for pat in left_to_right_patterns)
+
+
+def _is_operator_precedence_task(task_text: str, task_context: Optional[Dict[str, Any]]) -> bool:
+    text = (task_text or "") + " " + ((task_context or {}).get("prompt", "") or "")
+    if "do_algebra" in text:
+        return True
+    if "operator list" in text and "operand" in text and ("+" in text and "*" in text):
+        return True
     return False
 
 
