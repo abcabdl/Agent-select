@@ -395,6 +395,14 @@ def _extract_code_from_results(results: Dict[str, Any], entry_point: Optional[st
             if "ok" in value and value["ok"] is True:
                 # Look for code in output first
                 if "output" in value and isinstance(value["output"], dict):
+                    # Support nested output.output.code
+                    if "output" in value["output"] and isinstance(value["output"]["output"], dict):
+                        inner = value["output"]["output"]
+                        for key in ["code_or_commands", "code", "solution"]:
+                            if key in inner and isinstance(inner[key], str):
+                                code = inner[key]
+                                if code and code.strip() and not _is_fallback(code):
+                                    return _unwrap_json_code(code)
                     for key in ["code_or_commands", "code", "solution"]:
                         if key in value["output"] and isinstance(value["output"][key], str):
                             code = value["output"][key]
@@ -639,6 +647,11 @@ def _auto_generate_solutions_orchestrator(
     code_api_key: Optional[str],
     code_timeout: float,
     code_retries: int,
+    next_role_model: Optional[str],
+    next_role_base_url: Optional[str],
+    next_role_api_key: Optional[str],
+    next_role_timeout: float,
+    next_role_retries: int,
     embedder_kind: str,
     embedder_model: str,
     embedder_device: Optional[str],
@@ -681,6 +694,16 @@ def _auto_generate_solutions_orchestrator(
             model=code_model or None,
             timeout_s=code_timeout,
             max_retries=code_retries,
+        )
+    
+    next_role_client: Optional[LLMClient] = None
+    if next_role_model or next_role_base_url or next_role_api_key:
+        next_role_client = LLMClient(
+            api_key=next_role_api_key or None,
+            base_url=next_role_base_url or None,
+            model=next_role_model or None,
+            timeout_s=next_role_timeout,
+            max_retries=next_role_retries,
         )
 
     index = HNSWIndex.load(os.path.join(index_dir, "faiss.index"))
@@ -737,7 +760,8 @@ def _auto_generate_solutions_orchestrator(
                 "entry_point": entry_point,
                 "function_signature": func_sig,
                 "prompt": original_prompt,  # Use original prompt for test execution
-                "test": test
+                "test": test,
+                "stop_tokens": stop_tokens,
             } if entry_point else None
 
             result = run_workflow(
@@ -763,7 +787,7 @@ def _auto_generate_solutions_orchestrator(
                 topology=topology,
                 topology_config=topology_config,
                 meta_router_llm_client=local_client,
-                next_role_llm_client=local_client,
+                next_role_llm_client=next_role_client or local_client,
                 soft_connection=soft_connection,
                 max_steps=max_steps,
                 allow_unknown_roles=allow_unknown_roles,
@@ -775,7 +799,8 @@ def _auto_generate_solutions_orchestrator(
             )
 
             results = result.get("results") or {}
-            tool_trace = result.get("tool_exec") if include_tool_trace else None
+            tool_exec = result.get("tool_exec")
+            tool_trace = tool_exec if include_tool_trace else None
             
             # Extract topology and agent selection info FIRST (before checking completion)
             topology_info = result.get("topology") or {"topology": "linear", "roles": roles}
@@ -784,7 +809,12 @@ def _auto_generate_solutions_orchestrator(
             if include_tool_trace and tool_trace is not None:
                 task_meta["tool_trace"] = json.loads(json.dumps(tool_trace, ensure_ascii=True, default=str))
             
-            completion = _extract_code_from_results(results, entry_point)
+            # Include tool_exec in extraction so we can recover code even if role outputs
+            # were validated into schemas that drop code_or_commands (e.g., planner).
+            extraction_payload = dict(results)
+            if tool_exec:
+                extraction_payload["tool_exec"] = tool_exec
+            completion = _extract_code_from_results(extraction_payload, entry_point)
             if completion is None or not completion.strip():
                 # Record meta even if no code was generated (helps debugging)
                 task_meta["extraction_failed"] = True
@@ -792,36 +822,10 @@ def _auto_generate_solutions_orchestrator(
                 # Try to extract from tool_trace as last resort
                 tool_trace = result.get("tool_exec")
                 if tool_trace and isinstance(tool_trace, dict):
-                    # Try each role in priority order
-                    for role in ["builder", "researcher", "planner", "tester", "refractor"]:
-                        traces = tool_trace.get(role)
-                        if isinstance(traces, list):
-                            # Try to find the best successful tool execution
-                            best_code = None
-                            for trace in traces:
-                                if isinstance(trace, dict):
-                                    result_obj = trace.get("result", {})
-                                    # STRICT: Only use successful executions with ok=True and no error
-                                    if not isinstance(result_obj, dict):
-                                        continue
-                                    if result_obj.get("ok") is not True:
-                                        continue
-                                    # Skip tool-level fatal errors
-                                    if "error" in result_obj and _is_tool_error(result_obj["error"]):
-                                        continue
-                                    if result_obj.get("error"):
-                                        continue
-                                    
-                                    # Extract directly from the result
-                                    if "output" in result_obj and isinstance(result_obj["output"], dict):
-                                        code = result_obj["output"].get("code_or_commands") or result_obj["output"].get("code")
-                                        if code and code.strip() and not _is_fallback(code):
-                                            best_code = code
-                                            # Keep looking for better matches (later tools might be refined)
-                            if best_code:
-                                completion = best_code
-                                task_meta["extracted_from"] = f"tool_trace.{role}"
-                                break
+                    # Reuse the main extractor on tool_exec for robust nested output handling.
+                    completion = _extract_code_from_results({"tool_exec": tool_trace}, entry_point)
+                    if completion:
+                        task_meta["extracted_from"] = "tool_exec"
                 
                 # Final fallback: Use LLM to generate code directly if all tools failed
                 if not completion or not completion.strip():
@@ -996,6 +1000,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--code_api_key", type=str, default="", help="remote code API key (optional; uses env)")
     parser.add_argument("--code_timeout", type=float, default=60.0, help="remote code API timeout seconds")
     parser.add_argument("--code_retries", type=int, default=2, help="remote code API retry count")
+    parser.add_argument("--next_role_model", type=str, default="", help="remote next-role model (OpenAI-compatible)")
+    parser.add_argument("--next_role_base_url", type=str, default="", help="remote next-role API base URL")
+    parser.add_argument("--next_role_api_key", type=str, default="", help="remote next-role API key (optional; uses env)")
+    parser.add_argument("--next_role_timeout", type=float, default=60.0, help="remote next-role API timeout seconds")
+    parser.add_argument("--next_role_retries", type=int, default=2, help="remote next-role API retry count")
     parser.add_argument("--max_new_tokens", type=int, default=256)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--no_strict_prompt", action="store_true", help="disable strict prompt suffix")
@@ -1116,6 +1125,11 @@ def main() -> None:
                     code_api_key=args.code_api_key or None,
                     code_timeout=args.code_timeout,
                     code_retries=args.code_retries,
+                    next_role_model=args.next_role_model or None,
+                    next_role_base_url=args.next_role_base_url or None,
+                    next_role_api_key=args.next_role_api_key or None,
+                    next_role_timeout=args.next_role_timeout,
+                    next_role_retries=args.next_role_retries,
                     embedder_kind=args.embedder,
                     embedder_model=args.embedder_model,
                     embedder_device=args.embedder_device,

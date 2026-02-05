@@ -797,16 +797,9 @@ def _plan_and_run_tools(
         used_tool_ids.add(tool_id)
         
         tool_input = _normalize_tool_input(decision.get("tool_input"))
-        enhanced_task = task_text
-        if _is_operator_precedence_task(task_text, task_context) and "operator precedence" not in task_text.lower():
-            enhanced_task = (
-                f"{task_text}\n\nIMPORTANT: Evaluate using operator precedence (** > * // > + -). "
-                "Do NOT evaluate left-to-right."
-            )
         exec_inputs = {
-            "query": enhanced_task,
-            "task": enhanced_task,
-            "prompt": enhanced_task,
+            "query": task_text,
+            "task": task_text,
             "role": role,
             "agent": agent_context,
             "upstream": results,
@@ -846,13 +839,6 @@ def _plan_and_run_tools(
                             f"❌ ASSERTION FAILED: The test expectation was not met.\n"
                             f"✅ HINT: Check the logic carefully - the output doesn't match expected result."
                         )
-                if _needs_operator_precedence_fix(task_text, task_context, failed_code, last_test_error):
-                    diagnostic_hints.append(
-                        "❌ PRECEDENCE ERROR: The expression must respect operator precedence (** > * // > + -). "
-                        "Left-to-right folding is incorrect.\n"
-                        "✅ FIX: Build the expression string and evaluate it with Python precedence, or implement a "
-                        "shunting-yard/two-stack evaluator."
-                    )
                 
                 # Index/Key errors
                 if "indexerror" in error_lower or "keyerror" in error_lower:
@@ -1195,33 +1181,183 @@ def _is_placeholder_code(code: str) -> bool:
     return False
 
 
-def _needs_operator_precedence_fix(
-    task_text: str,
-    task_context: Optional[Dict[str, Any]],
-    failed_code: Optional[str],
-    test_error: Optional[str],
-) -> bool:
-    if not _is_operator_precedence_task(task_text, task_context):
-        return False
-    if not test_error or "assert candidate" not in test_error:
-        return False
-    code = failed_code or ""
-    left_to_right_patterns = [
-        "result = operand[0]",
-        "result=operand[0]",
-        "for i, op in enumerate(operator)",
-        "for i in range(len(operator))",
-    ]
-    return any(pat in code for pat in left_to_right_patterns)
+def _apply_stop_tokens(text: str, stop_tokens: List[str]) -> str:
+    if not text or not stop_tokens:
+        return text
+    stop_pos = None
+    for token in stop_tokens:
+        if not token:
+            continue
+        idx = text.find(token)
+        if idx == -1:
+            continue
+        if stop_pos is None or idx < stop_pos:
+            stop_pos = idx
+    if stop_pos is None:
+        return text
+    return text[:stop_pos]
 
 
-def _is_operator_precedence_task(task_text: str, task_context: Optional[Dict[str, Any]]) -> bool:
-    text = (task_text or "") + " " + ((task_context or {}).get("prompt", "") or "")
-    if "do_algebra" in text:
-        return True
-    if "operator list" in text and "operand" in text and ("+" in text and "*" in text):
-        return True
-    return False
+def _unwrap_json_code(text: str) -> str:
+    if not text or "{" not in text:
+        return text
+    try:
+        start_idx = text.find("{")
+        if start_idx == -1:
+            return text
+        json_text = text[start_idx:]
+        data = json.loads(json_text)
+        if isinstance(data, dict):
+            for key in ["code_or_commands", "code", "solution", "output"]:
+                if key in data:
+                    value = data[key]
+                    if isinstance(value, str) and value.strip():
+                        return value
+                    if isinstance(value, dict):
+                        for nested_key in ["code_or_commands", "code", "solution"]:
+                            if nested_key in value and isinstance(value[nested_key], str):
+                                return value[nested_key]
+    except Exception:
+        return text
+    return text
+
+
+def _extract_code_block(text: str) -> str:
+    if not text:
+        return text
+    text = _unwrap_json_code(text)
+    if "```" not in text:
+        return text
+    parts = text.split("```")
+    if len(parts) < 3:
+        return text
+    code = parts[1]
+    lines = code.splitlines()
+    if lines and lines[0].strip().lower() in {"python", "py", "json"}:
+        lines = lines[1:]
+    return "\n".join(lines).strip() or text
+
+
+def _strip_redundant_def(text: str, entry_point: Optional[str]) -> str:
+    if not entry_point or not text:
+        return text
+    target = f"def {entry_point}"
+    lines = text.splitlines()
+    for idx, line in enumerate(lines):
+        if line.lstrip().startswith(target):
+            body_lines = lines[idx + 1 :]
+            if not body_lines:
+                return text
+            return "\n".join(body_lines).lstrip("\n")
+    return text
+
+
+def _normalize_completion(text: str, entry_point: Optional[str]) -> str:
+    if text is None:
+        return ""
+    text = str(text).replace("\\n", "\n")
+    if not entry_point:
+        return text
+    lines = text.lstrip("\n").splitlines()
+    if not lines:
+        return text
+    if lines[0].lstrip().startswith(("def ", "class ", "@")):
+        return "\n".join(lines)
+    indents = [len(line) - len(line.lstrip()) for line in lines if line.strip()]
+    min_pos_indent = min((i for i in indents if i > 0), default=0)
+    if min_pos_indent > 0:
+        new_lines = []
+        for line in lines:
+            if not line.strip():
+                new_lines.append(line)
+                continue
+            leading = len(line) - len(line.lstrip())
+            trim = min(leading, min_pos_indent)
+            new_lines.append(line[trim:])
+        lines = new_lines
+    lines = [("    " + line) if line.strip() else line for line in lines]
+    return "\n".join(lines)
+
+
+def _build_program(
+    prompt: str, completion: str, test_code: str, entry_point: Optional[str] = None
+) -> str:
+    prompt_text = prompt or ""
+    completion_text = completion or ""
+    completion_text = _extract_code_block(completion_text)
+    completion_text = _strip_redundant_def(completion_text, entry_point)
+    completion_text = _normalize_completion(completion_text, entry_point)
+    if not completion_text.endswith("\n"):
+        completion_text += "\n"
+    return f"{prompt_text}{completion_text}\n{test_code}\n"
+
+
+def _looks_like_syntax_error(message: str) -> bool:
+    if not message:
+        return False
+    return any(token in message for token in ("SyntaxError", "IndentationError", "TabError"))
+
+
+def _repair_completion(completion: str, entry_point: Optional[str]) -> str:
+    text = str(completion or "")
+    text = text.replace("\r\n", "\n")
+    text = _extract_code_block(text)
+    text = text.expandtabs(4)
+    text = _strip_redundant_def(text, entry_point)
+    lines = [line for line in text.splitlines() if not line.strip().startswith("```")]
+    text = "\n".join(lines)
+    text = textwrap.dedent(text).strip("\n")
+    if entry_point:
+        lines = text.splitlines()
+        lines = [("    " + line) if line.strip() else line for line in lines]
+        text = "\n".join(lines)
+    return text
+
+
+def _run_python(code: str, timeout_s: float) -> Tuple[bool, str]:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        path = os.path.join(tmp_dir, "eval_task.py")
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(code)
+        except Exception as e:
+            return False, f"File write error: {str(e)}"
+        try:
+            result = subprocess.run(
+                [sys.executable, path],
+                capture_output=True,
+                text=True,
+                timeout=timeout_s,
+            )
+        except subprocess.TimeoutExpired:
+            return False, "Test execution timeout"
+        except Exception as e:
+            return False, f"Test execution error: {str(e)}"
+    if result.returncode == 0:
+        return True, ""
+    stderr = result.stderr.strip()
+    stdout = result.stdout.strip()
+    message = stderr or stdout or f"exit_code={result.returncode}"
+    return False, message
+
+
+def _run_with_repair(
+    prompt: str,
+    completion: str,
+    test_code: str,
+    entry_point: Optional[str],
+    timeout_s: float,
+) -> Tuple[bool, str]:
+    code = _build_program(prompt, str(completion), test_code, entry_point)
+    ok, message = _run_python(code, timeout_s=timeout_s)
+    if ok or not _looks_like_syntax_error(message):
+        return ok, message
+    repaired = _repair_completion(str(completion), entry_point)
+    if not repaired or repaired == str(completion):
+        return ok, message
+    repaired_code = _build_program(prompt, repaired, test_code, entry_point)
+    ok2, message2 = _run_python(repaired_code, timeout_s=timeout_s)
+    return ok2, ("" if ok2 else message2)
 
 
 def _test_code(code: str, task_context: Optional[Dict[str, Any]], timeout_s: float = 5.0) -> Tuple[bool, str]:
@@ -1241,81 +1377,16 @@ def _test_code(code: str, task_context: Optional[Dict[str, Any]], timeout_s: flo
     prompt = task_context.get("prompt", "")
     test_code = task_context.get("test", "")
     entry_point = task_context.get("entry_point")
+    stop_tokens = task_context.get("stop_tokens") or []
     
     if not test_code:
         return True, ""  # No test available
     
-    # Properly format the code with indentation (matching eval_humaneval.py logic exactly)
-    code_text = str(code).replace("\\n", "\n")
-    
-    # Remove code block markers if present (same as _extract_code_block)
-    if "```" in code_text:
-        parts = code_text.split("```")
-        if len(parts) >= 3:
-            code_block = parts[1]
-            lines = code_block.splitlines()
-            if lines and lines[0].strip().lower() in {"python", "py", "json"}:
-                lines = lines[1:]
-            code_text = "\n".join(lines).strip()
-    
-    # Apply EXACT same normalization as eval_humaneval._normalize_completion
-    if entry_point:
-        lines = code_text.lstrip("\n").splitlines()
-        if lines and lines[0].lstrip().startswith(("def ", "class ", "@")):
-            # Already has def, use as-is
-            code_text = "\n".join(lines)
-        else:
-            # Compute smallest positive indent (ignoring entirely blank lines); use it to dedent uneven bodies.
-            indents = [len(line) - len(line.lstrip()) for line in lines if line.strip()]
-            min_pos_indent = min((i for i in indents if i > 0), default=0)
-            if min_pos_indent > 0:
-                new_lines = []
-                for line in lines:
-                    if not line.strip():
-                        new_lines.append(line)
-                        continue
-                    leading = len(line) - len(line.lstrip())
-                    trim = min(leading, min_pos_indent)
-                    new_lines.append(line[trim:])
-                lines = new_lines
-            
-            # Add 4-space indent for function body
-            lines = [("    " + line) if line.strip() else line for line in lines]
-            code_text = "\n".join(lines)
-    
-    # Build complete program
-    if not code_text.endswith("\n"):
-        code_text += "\n"
-    program = f"{prompt}{code_text}\n{test_code}\n"
-    
-    # Run test
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        path = os.path.join(tmp_dir, "eval_task.py")
-        try:
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(program)
-        except Exception as e:
-            return False, f"File write error: {str(e)}"
-        
-        try:
-            result = subprocess.run(
-                [sys.executable, path],
-                capture_output=True,
-                text=True,
-                timeout=timeout_s,
-            )
-        except subprocess.TimeoutExpired:
-            return False, "Test execution timeout"
-        except Exception as e:
-            return False, f"Test execution error: {str(e)}"
-    
-    if result.returncode == 0:
-        return True, ""
-    
-    stderr = result.stderr.strip()
-    stdout = result.stdout.strip()
-    error_msg = stderr or stdout or f"exit_code={result.returncode}"
-    return False, error_msg
+    completion = str(code)
+    if stop_tokens:
+        completion = _apply_stop_tokens(_extract_code_block(completion), stop_tokens)
+    ok, message = _run_with_repair(prompt, completion, test_code, entry_point, timeout_s=timeout_s)
+    return ok, message
 
 
 def _summarize_tool_history(tool_history: List[Dict[str, Any]]) -> List[str]:
