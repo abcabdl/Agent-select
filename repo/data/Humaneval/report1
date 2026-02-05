@@ -1,0 +1,3221 @@
+{
+  "total": 161,
+  "passed": 140,
+  "pass_rate": 0.8695652173913043,
+  "results": [
+    {
+      "name": "HumanEval_23_strlen",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "none",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_89_encrypt",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp4oub08pr/eval_task.py\", line 35, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp4oub08pr/eval_task.py\", line 33, in test_check\n    check(encrypt)\n    ~~~~~^^^^^^^^^\n  File \"/tmp/tmp4oub08pr/eval_task.py\", line 27, in check\n    assert candidate('faewfawefaewg') == 'jeiajeaijeiak'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 15"
+      }
+    },
+    {
+      "name": "HumanEval_95_check_dict_case",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 15"
+      }
+    },
+    {
+      "name": "HumanEval_85_add",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_140_fix_spaces",
+      "ok": false,
+      "error": "File \"/tmp/tmprqnqwt92/eval_task.py\", line 17\n    text = re.sub(r' {3,}', '-', text)\nIndentationError: unexpected indent",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 34"
+      }
+    },
+    {
+      "name": "HumanEval_63_fibfib",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 1"
+      }
+    },
+    {
+      "name": "HumanEval_151_double_the_difference",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 44"
+      }
+    },
+    {
+      "name": "HumanEval_22_filter_integers",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 15"
+      }
+    },
+    {
+      "name": "HumanEval_41_car_race_collision",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpwq84dnvz/eval_task.py\", line 25, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpwq84dnvz/eval_task.py\", line 23, in test_check\n    check(car_race_collision)\n    ~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmpwq84dnvz/eval_task.py\", line 16, in check\n    assert candidate(2) == 4\n           ^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 40"
+      }
+    },
+    {
+      "name": "HumanEval_17_parse_music",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 49"
+      }
+    },
+    {
+      "name": "HumanEval_79_decimal_to_binary",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 33"
+      }
+    },
+    {
+      "name": "HumanEval_14_all_prefixes",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 43"
+      }
+    },
+    {
+      "name": "HumanEval_53_add",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 7"
+      }
+    },
+    {
+      "name": "HumanEval_159_eat",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_115_max_fill",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_160_do_algebra",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "none",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 36"
+      }
+    },
+    {
+      "name": "HumanEval_27_flip_case",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 36"
+      }
+    },
+    {
+      "name": "HumanEval_105_by_length",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_25_factorize",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 43"
+      }
+    },
+    {
+      "name": "HumanEval_96_count_up_to",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_34_unique",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 28"
+      }
+    },
+    {
+      "name": "HumanEval_74_total_match",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 1"
+      }
+    },
+    {
+      "name": "HumanEval_35_max_element",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 41"
+      }
+    },
+    {
+      "name": "HumanEval_132_is_nested",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpa5buyh8o/eval_task.py\", line 52, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpa5buyh8o/eval_task.py\", line 50, in test_check\n    check(is_nested)\n    ~~~~~^^^^^^^^^^^\n  File \"/tmp/tmpa5buyh8o/eval_task.py\", line 36, in check\n    assert candidate('[][]') == False\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_103_rounded_avg",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 13"
+      }
+    },
+    {
+      "name": "HumanEval_113_odd_count",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 24"
+      }
+    },
+    {
+      "name": "HumanEval_109_move_one_ball",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_107_even_odd_palindrome",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 15"
+      }
+    },
+    {
+      "name": "HumanEval_138_is_equal_to_sum_even",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 9"
+      }
+    },
+    {
+      "name": "HumanEval_62_derivative",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_126_is_sorted",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 1"
+      }
+    },
+    {
+      "name": "HumanEval_161_solve",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 47"
+      }
+    },
+    {
+      "name": "HumanEval_130_tri",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp1ggey995/eval_task.py\", line 48, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp1ggey995/eval_task.py\", line 46, in test_check\n    check(tri)\n    ~~~~~^^^^^\n  File \"/tmp/tmp1ggey995/eval_task.py\", line 34, in check\n    assert candidate(3) == [1, 3, 2, 8]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 1"
+      }
+    },
+    {
+      "name": "HumanEval_36_fizz_buzz",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_29_filter_by_prefix",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp8vrapo6j/eval_task.py\", line 20, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp8vrapo6j/eval_task.py\", line 18, in test_check\n    check(filter_by_prefix)\n    ~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmp8vrapo6j/eval_task.py\", line 14, in check\n    assert candidate([], 'john') == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_84_solve",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 19"
+      }
+    },
+    {
+      "name": "HumanEval_129_minPath",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp2wpj37c8/eval_task.py\", line 72, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp2wpj37c8/eval_task.py\", line 70, in test_check\n    check(minPath)\n    ~~~~~^^^^^^^^^\n  File \"/tmp/tmp2wpj37c8/eval_task.py\", line 57, in check\n    assert candidate([[1, 2, 3], [4, 5, 6], [7, 8, 9]], 3) == [1, 2, 1]\n           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmp2wpj37c8/eval_task.py\", line 52, in minPath\n    bfs(i, j)\n    ~~~^^^^^^\n  File \"/tmp/tmp2wpj37c8/eval_task.py\", line 38, in bfs\n    queue = deque([(start_row, start_col, [grid[start_row][start_col]])])\n            ^^^^^\nNameError: name 'deque' is not defined",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 28"
+      }
+    },
+    {
+      "name": "HumanEval_98_count_upper",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 43"
+      }
+    },
+    {
+      "name": "HumanEval_120_maximum",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 42"
+      }
+    },
+    {
+      "name": "HumanEval_24_largest_divisor",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 2"
+      }
+    },
+    {
+      "name": "HumanEval_88_sort_array",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_106_f",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 29"
+      }
+    },
+    {
+      "name": "HumanEval_77_iscube",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "builder",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 28"
+      }
+    },
+    {
+      "name": "HumanEval_93_encode",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpt5z762__/eval_task.py\", line 36, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpt5z762__/eval_task.py\", line 34, in test_check\n    check(encode)\n    ~~~~~^^^^^^^^\n  File \"/tmp/tmpt5z762__/eval_task.py\", line 27, in check\n    assert candidate('TEST') == 'tgst'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 1"
+      }
+    },
+    {
+      "name": "HumanEval_91_is_bored",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp215gl1z1/eval_task.py\", line 31, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp215gl1z1/eval_task.py\", line 29, in test_check\n    check(is_bored)\n    ~~~~~^^^^^^^^^^\n  File \"/tmp/tmp215gl1z1/eval_task.py\", line 22, in check\n    assert candidate('Is the sky blue?') == 0\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "builder",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 14"
+      }
+    },
+    {
+      "name": "HumanEval_43_pairs_sum_to_zero",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 37"
+      }
+    },
+    {
+      "name": "HumanEval_71_triangle_area",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 43"
+      }
+    },
+    {
+      "name": "HumanEval_148_bf",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 30"
+      }
+    },
+    {
+      "name": "HumanEval_131_digits",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 7"
+      }
+    },
+    {
+      "name": "HumanEval_101_words_string",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 42"
+      }
+    },
+    {
+      "name": "HumanEval_18_how_many_times",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 11"
+      }
+    },
+    {
+      "name": "HumanEval_137_compare_one",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 23"
+      }
+    },
+    {
+      "name": "HumanEval_51_remove_vowels",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_70_strange_sort_list",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_20_find_closest_elements",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {}
+    },
+    {
+      "name": "HumanEval_76_is_simple_power",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "none",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {}
+    },
+    {
+      "name": "HumanEval_39_prime_fib",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 23"
+      }
+    },
+    {
+      "name": "HumanEval_145_order_by_points",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp8rrx6og4/eval_task.py\", line 31, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp8rrx6og4/eval_task.py\", line 29, in test_check\n    check(order_by_points)\n    ~~~~~^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmp8rrx6og4/eval_task.py\", line 21, in check\n    assert candidate([1, 11, -1, -11, -12]) == [-1, -11, 1, -12, 11]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 42"
+      }
+    },
+    {
+      "name": "HumanEval_0_has_close_elements",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 3"
+      }
+    },
+    {
+      "name": "HumanEval_10_make_palindrome",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 39"
+      }
+    },
+    {
+      "name": "HumanEval_11_string_xor",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 2"
+      }
+    },
+    {
+      "name": "HumanEval_139_special_factorial",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 28"
+      }
+    },
+    {
+      "name": "HumanEval_122_add_elements",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_46_fib4",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_104_unique_digits",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 36"
+      }
+    },
+    {
+      "name": "HumanEval_117_select_words",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 13"
+      }
+    },
+    {
+      "name": "HumanEval_72_will_it_fly",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "builder",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 7"
+      }
+    },
+    {
+      "name": "HumanEval_55_fib",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 25"
+      }
+    },
+    {
+      "name": "HumanEval_153_Strongest_Extension",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_119_match_parens",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 21"
+      }
+    },
+    {
+      "name": "HumanEval_90_next_smallest",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 20"
+      }
+    },
+    {
+      "name": "HumanEval_92_any_int",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 11"
+      }
+    },
+    {
+      "name": "HumanEval_2_truncate_number",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 9"
+      }
+    },
+    {
+      "name": "HumanEval_42_incr_list",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 3"
+      }
+    },
+    {
+      "name": "HumanEval_150_x_or_y",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 36"
+      }
+    },
+    {
+      "name": "HumanEval_49_modp",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 7"
+      }
+    },
+    {
+      "name": "HumanEval_155_even_odd_count",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_80_is_happy",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_59_largest_prime_factor",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 23"
+      }
+    },
+    {
+      "name": "HumanEval_66_digitSum",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_21_rescale_to_unit",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_121_solution",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 26"
+      }
+    },
+    {
+      "name": "HumanEval_68_pluck",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_147_get_max_triples",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 41"
+      }
+    },
+    {
+      "name": "HumanEval_110_exchange",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 15"
+      }
+    },
+    {
+      "name": "HumanEval_47_median",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_82_prime_length",
+      "ok": false,
+      "error": "File \"/tmp/tmpuwf8lguc/eval_task.py\", line 28\n    return is_prime(len(string))\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nSyntaxError: 'return' outside function",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_73_smallest_change",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_133_sum_squares",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 7"
+      }
+    },
+    {
+      "name": "HumanEval_141_file_name_check",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_40_triples_sum_to_zero",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 21"
+      }
+    },
+    {
+      "name": "HumanEval_127_intersection",
+      "ok": false,
+      "error": "File \"/tmp/tmpx7039_hz/eval_task.py\", line 44\n    return \"NO\"\n    ^^^^^^^^^^^\nSyntaxError: 'return' outside function",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_1_separate_paren_groups",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_152_compare",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 39"
+      }
+    },
+    {
+      "name": "HumanEval_83_starts_one_ends",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpi79yupk9/eval_task.py\", line 36, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpi79yupk9/eval_task.py\", line 34, in test_check\n    check(starts_one_ends)\n    ~~~~~^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmpi79yupk9/eval_task.py\", line 28, in check\n    assert candidate(2) == 18\n           ^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_134_check_if_last_char_is_a_letter",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp3r346saw/eval_task.py\", line 40, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp3r346saw/eval_task.py\", line 38, in test_check\n    check(check_if_last_char_is_a_letter)\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmp3r346saw/eval_task.py\", line 33, in check\n    assert candidate('eeeee e ') == False\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 28"
+      }
+    },
+    {
+      "name": "HumanEval_124_valid_date",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 30"
+      }
+    },
+    {
+      "name": "HumanEval_108_count_nums",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp9wzcuzgx/eval_task.py\", line 36, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp9wzcuzgx/eval_task.py\", line 34, in test_check\n    check(count_nums)\n    ~~~~~^^^^^^^^^^^^\n  File \"/tmp/tmp9wzcuzgx/eval_task.py\", line 25, in check\n    assert candidate([-1, -2, 0]) == 0\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 8"
+      }
+    },
+    {
+      "name": "HumanEval_86_anti_shuffle",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_48_is_palindrome",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 39"
+      }
+    },
+    {
+      "name": "HumanEval_118_get_closest_vowel",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 41"
+      }
+    },
+    {
+      "name": "HumanEval_31_is_prime",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 43"
+      }
+    },
+    {
+      "name": "HumanEval_144_simplify",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_78_hex_key",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 19"
+      }
+    },
+    {
+      "name": "HumanEval_143_words_in_sentence",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 28"
+      }
+    },
+    {
+      "name": "HumanEval_111_histogram",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 15"
+      }
+    },
+    {
+      "name": "HumanEval_87_get_row",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_123_get_odd_collatz",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "none",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 3"
+      }
+    },
+    {
+      "name": "HumanEval_135_can_arrange",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp5yx7wxu5/eval_task.py\", line 30, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp5yx7wxu5/eval_task.py\", line 28, in test_check\n    check(can_arrange)\n    ~~~~~^^^^^^^^^^^^^\n  File \"/tmp/tmp5yx7wxu5/eval_task.py\", line 24, in check\n    assert candidate([4, 8, 5, 7, 3]) == 4\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 13"
+      }
+    },
+    {
+      "name": "HumanEval_19_sort_numbers",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 1"
+      }
+    },
+    {
+      "name": "HumanEval_65_circular_shift",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_142_sum_squares",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 41"
+      }
+    },
+    {
+      "name": "HumanEval_94_skjkasdkd",
+      "ok": false,
+      "error": "File \"/tmp/tmp018w0a7k/eval_task.py\", line 41\n    return 0\n    ^^^^^^^^\nSyntaxError: 'return' outside function",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_8_sum_product",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_102_choose_num",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 11"
+      }
+    },
+    {
+      "name": "HumanEval_136_largest_smallest_integers",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_16_count_distinct_characters",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 26"
+      }
+    },
+    {
+      "name": "HumanEval_100_make_a_pile",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 18"
+      }
+    },
+    {
+      "name": "HumanEval_128_prod_signs",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 36"
+      }
+    },
+    {
+      "name": "HumanEval_114_minSubArraySum",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 33"
+      }
+    },
+    {
+      "name": "HumanEval_15_string_sequence",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 15"
+      }
+    },
+    {
+      "name": "HumanEval_154_cycpattern_check",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "none",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 11"
+      }
+    },
+    {
+      "name": "HumanEval_57_monotonic",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 9"
+      }
+    },
+    {
+      "name": "HumanEval_12_longest",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_52_below_threshold",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 19"
+      }
+    },
+    {
+      "name": "HumanEval_75_is_multiply_prime",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpcj17h0tv/eval_task.py\", line 33, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpcj17h0tv/eval_task.py\", line 31, in test_check\n    check(is_multiply_prime)\n    ~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmpcj17h0tv/eval_task.py\", line 28, in check\n    assert candidate(1001) == True\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 43"
+      }
+    },
+    {
+      "name": "HumanEval_30_get_positive",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_33_sort_third",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 21"
+      }
+    },
+    {
+      "name": "HumanEval_6_parse_nested_parens",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 45"
+      }
+    },
+    {
+      "name": "HumanEval_45_triangle_area",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 24"
+      }
+    },
+    {
+      "name": "HumanEval_97_multiply",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_4_mean_absolute_deviation",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 50"
+      }
+    },
+    {
+      "name": "HumanEval_58_common",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 11"
+      }
+    },
+    {
+      "name": "HumanEval_156_int_to_mini_roman",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 43"
+      }
+    },
+    {
+      "name": "HumanEval_67_fruit_distribution",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 5"
+      }
+    },
+    {
+      "name": "HumanEval_112_reverse_delete",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": "none",
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 22"
+      }
+    },
+    {
+      "name": "HumanEval_13_greatest_common_divisor",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 41"
+      }
+    },
+    {
+      "name": "HumanEval_125_split_words",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp0ntg4g5y/eval_task.py\", line 36, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp0ntg4g5y/eval_task.py\", line 34, in test_check\n    check(split_words)\n    ~~~~~^^^^^^^^^^^^^\n  File \"/tmp/tmp0ntg4g5y/eval_task.py\", line 29, in check\n    assert candidate('aaabb') == 2\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 28"
+      }
+    },
+    {
+      "name": "HumanEval_116_sort_array",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_28_concatenate",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 1"
+      }
+    },
+    {
+      "name": "HumanEval_149_sorted_list_sum",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 34"
+      }
+    },
+    {
+      "name": "HumanEval_7_filter_by_substring",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_99_closest_integer",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_64_vowels_count",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 41"
+      }
+    },
+    {
+      "name": "HumanEval_158_find_max",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_162_string_to_md5",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    },
+    {
+      "name": "HumanEval_44_change_base",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 13"
+      }
+    },
+    {
+      "name": "HumanEval_157_right_angle_triangle",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 32"
+      }
+    },
+    {
+      "name": "HumanEval_81_numerical_letter_grade",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation checker 12"
+      }
+    },
+    {
+      "name": "HumanEval_5_intersperse",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 38"
+      }
+    },
+    {
+      "name": "HumanEval_146_specialFilter",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 31"
+      }
+    },
+    {
+      "name": "HumanEval_60_sum_to_n",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 1"
+      }
+    },
+    {
+      "name": "HumanEval_26_remove_duplicates",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 19"
+      }
+    },
+    {
+      "name": "HumanEval_163_generate_integers",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpjy_5y37_/eval_task.py\", line 29, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpjy_5y37_/eval_task.py\", line 27, in test_check\n    check(generate_integers)\n    ~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmpjy_5y37_/eval_task.py\", line 21, in check\n    assert candidate(2, 10) == [2, 4, 6, 8]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 10"
+      }
+    },
+    {
+      "name": "HumanEval_9_rolling_max",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 37"
+      }
+    },
+    {
+      "name": "HumanEval_3_below_zero",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation researcher 22"
+      }
+    },
+    {
+      "name": "HumanEval_69_search",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {}
+    },
+    {
+      "name": "HumanEval_61_correct_bracketing",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 27"
+      }
+    },
+    {
+      "name": "HumanEval_37_sort_even",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 41"
+      }
+    },
+    {
+      "name": "HumanEval_54_same_chars",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpf98svv28/eval_task.py\", line 32, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpf98svv28/eval_task.py\", line 30, in test_check\n    check(same_chars)\n    ~~~~~^^^^^^^^^^^^\n  File \"/tmp/tmpf98svv28/eval_task.py\", line 21, in check\n    assert candidate('eabcdzzzz', 'dddzzzzzzzddeddabc') == True\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation planner 21"
+      }
+    },
+    {
+      "name": "HumanEval_56_correct_bracketing",
+      "ok": true,
+      "error": "",
+      "topology": {
+        "topology": "single",
+        "roles": [
+          "builder"
+        ],
+        "manager_role": null,
+        "entry_role": "builder",
+        "max_steps": 1,
+        "flow_type": "sequential",
+        "edges": [],
+        "routing_table": {}
+      },
+      "selected_agents": {
+        "builder": "code-generation builder 35"
+      }
+    }
+  ]
+}

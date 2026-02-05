@@ -1,0 +1,952 @@
+{
+  "agent-code-generation-builder-11": {
+    "tools": [
+      "code-generation-generateparsing31",
+      "code-generation-generategreedy32",
+      "code-generation-generaterecursion33",
+      "code-generation-synthesize11-implement1",
+      "code-generation-compose11-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Generation; Preferred tools: code-generation-generateparsing31, code-generation-generategreedy32, code-generation-generaterecursion33."
+  },
+  "agent-code-generation-builder-15": {
+    "tools": [
+      "code-generation-generateparsing43",
+      "code-generation-generategreedy44",
+      "code-generation-generaterecursion45",
+      "code-generation-synthesize15-implement1",
+      "code-generation-compose15-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Generation; Preferred tools: code-generation-generateparsing43, code-generation-generategreedy44, code-generation-generaterecursion45."
+  },
+  "agent-code-generation-builder-19": {
+    "tools": [
+      "code-generation-generateparsing55",
+      "code-generation-generategreedy56",
+      "code-generation-generaterecursion57",
+      "code-generation-synthesize19-implement1",
+      "code-generation-compose19-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Generation; Preferred tools: code-generation-generateparsing55, code-generation-generategreedy56, code-generation-generaterecursion57."
+  },
+  "agent-code-generation-builder-3": {
+    "tools": [
+      "code-generation-generateparsing7",
+      "code-generation-generategreedy8",
+      "code-generation-generaterecursion9",
+      "code-generation-synthesize3-implement1",
+      "code-generation-compose3-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Generation; Preferred tools: code-generation-generateparsing7, code-generation-generategreedy8, code-generation-generaterecursion9."
+  },
+  "agent-code-generation-builder-7": {
+    "tools": [
+      "code-generation-generateparsing19",
+      "code-generation-generategreedy20",
+      "code-generation-generaterecursion21",
+      "code-generation-synthesize7-implement1",
+      "code-generation-compose7-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Generation; Preferred tools: code-generation-generateparsing19, code-generation-generategreedy20, code-generation-generaterecursion21."
+  },
+  "agent-code-generation-checker-12": {
+    "tools": [
+      "code-generation-generateio34",
+      "code-generation-generaterobustness35",
+      "code-generation-generateedgecase36",
+      "code-generation-synthesize12-validate1",
+      "code-generation-compose12-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Generation; Preferred tools: code-generation-generateio34, code-generation-generaterobustness35, code-generation-generateedgecase36."
+  },
+  "agent-code-generation-checker-16": {
+    "tools": [
+      "code-generation-generateio46",
+      "code-generation-generaterobustness47",
+      "code-generation-generateedgecase48",
+      "code-generation-synthesize16-validate1",
+      "code-generation-compose16-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Generation; Preferred tools: code-generation-generateio46, code-generation-generaterobustness47, code-generation-generateedgecase48."
+  },
+  "agent-code-generation-checker-20": {
+    "tools": [
+      "code-generation-generateio58",
+      "code-generation-generaterobustness59",
+      "code-generation-generateedgecase60",
+      "code-generation-synthesize20-validate1",
+      "code-generation-compose20-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Generation; Preferred tools: code-generation-generateio58, code-generation-generaterobustness59, code-generation-generateedgecase60."
+  },
+  "agent-code-generation-checker-4": {
+    "tools": [
+      "code-generation-generateio10",
+      "code-generation-generaterobustness11",
+      "code-generation-generateedgecase12",
+      "code-generation-synthesize4-validate1",
+      "code-generation-compose4-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Generation; Preferred tools: code-generation-generateio10, code-generation-generaterobustness11, code-generation-generateedgecase12."
+  },
+  "agent-code-generation-checker-8": {
+    "tools": [
+      "code-generation-generateio22",
+      "code-generation-generaterobustness23",
+      "code-generation-generateedgecase24",
+      "code-generation-synthesize8-validate1",
+      "code-generation-compose8-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Generation; Preferred tools: code-generation-generateio22, code-generation-generaterobustness23, code-generation-generateedgecase24."
+  },
+  "agent-code-generation-planner-1": {
+    "tools": [
+      "code-generation-generatealgorithm1",
+      "code-generation-generatedatastructure2",
+      "code-generation-generatestring3",
+      "code-generation-synthesize1-strategy1",
+      "code-generation-compose1-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Generation; Preferred tools: code-generation-generatealgorithm1, code-generation-generatedatastructure2, code-generation-generatestring3."
+  },
+  "agent-code-generation-planner-13": {
+    "tools": [
+      "code-generation-generatealgorithm37",
+      "code-generation-generatedatastructure38",
+      "code-generation-generatestring39",
+      "code-generation-synthesize13-strategy1",
+      "code-generation-compose13-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Generation; Preferred tools: code-generation-generatealgorithm37, code-generation-generatedatastructure38, code-generation-generatestring39."
+  },
+  "agent-code-generation-planner-17": {
+    "tools": [
+      "code-generation-generatealgorithm49",
+      "code-generation-generatedatastructure50",
+      "code-generation-generatestring51",
+      "code-generation-synthesize17-strategy1",
+      "code-generation-compose17-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Generation; Preferred tools: code-generation-generatealgorithm49, code-generation-generatedatastructure50, code-generation-generatestring51."
+  },
+  "agent-code-generation-planner-5": {
+    "tools": [
+      "code-generation-generatealgorithm13",
+      "code-generation-generatedatastructure14",
+      "code-generation-generatestring15",
+      "code-generation-synthesize5-strategy1",
+      "code-generation-compose5-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Generation; Preferred tools: code-generation-generatealgorithm13, code-generation-generatedatastructure14, code-generation-generatestring15."
+  },
+  "agent-code-generation-planner-9": {
+    "tools": [
+      "code-generation-generatealgorithm25",
+      "code-generation-generatedatastructure26",
+      "code-generation-generatestring27",
+      "code-generation-synthesize9-strategy1",
+      "code-generation-compose9-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Generation; Preferred tools: code-generation-generatealgorithm25, code-generation-generatedatastructure26, code-generation-generatestring27."
+  },
+  "agent-code-generation-researcher-10": {
+    "tools": [
+      "code-generation-generategraph28",
+      "code-generation-generatedp29",
+      "code-generation-generatemath30",
+      "code-generation-synthesize10-analyze1",
+      "code-generation-compose10-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Generation; Preferred tools: code-generation-generategraph28, code-generation-generatedp29, code-generation-generatemath30."
+  },
+  "agent-code-generation-researcher-14": {
+    "tools": [
+      "code-generation-generategraph40",
+      "code-generation-generatedp41",
+      "code-generation-generatemath42",
+      "code-generation-synthesize14-analyze1",
+      "code-generation-compose14-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Generation; Preferred tools: code-generation-generategraph40, code-generation-generatedp41, code-generation-generatemath42."
+  },
+  "agent-code-generation-researcher-18": {
+    "tools": [
+      "code-generation-generategraph52",
+      "code-generation-generatedp53",
+      "code-generation-generatemath54",
+      "code-generation-synthesize18-analyze1",
+      "code-generation-compose18-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Generation; Preferred tools: code-generation-generategraph52, code-generation-generatedp53, code-generation-generatemath54."
+  },
+  "agent-code-generation-researcher-2": {
+    "tools": [
+      "code-generation-generategraph4",
+      "code-generation-generatedp5",
+      "code-generation-generatemath6",
+      "code-generation-synthesize2-analyze1",
+      "code-generation-compose2-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Generation; Preferred tools: code-generation-generategraph4, code-generation-generatedp5, code-generation-generatemath6."
+  },
+  "agent-code-generation-researcher-6": {
+    "tools": [
+      "code-generation-generategraph16",
+      "code-generation-generatedp17",
+      "code-generation-generatemath18",
+      "code-generation-synthesize6-analyze1",
+      "code-generation-compose6-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Generation; Preferred tools: code-generation-generategraph16, code-generation-generatedp17, code-generation-generatemath18."
+  },
+  "agent-code-planner-builder-11": {
+    "tools": [
+      "code-planner-planmilestone31",
+      "code-planner-plandependency32",
+      "code-planner-planrisk33",
+      "code-planner-organize11-implement1",
+      "code-planner-prioritize11-construct2"
+    ],
+    "description": "Role: builder; Domain: Code planner; Preferred tools: code-planner-planmilestone31, code-planner-plandependency32, code-planner-planrisk33."
+  },
+  "agent-code-planner-builder-15": {
+    "tools": [
+      "code-planner-planrisk43",
+      "code-planner-plantimebox44",
+      "code-planner-planarchitecture45",
+      "code-planner-organize15-implement1",
+      "code-planner-prioritize15-construct2"
+    ],
+    "description": "Role: builder; Domain: Code planner; Preferred tools: code-planner-planrisk43, code-planner-plantimebox44, code-planner-planarchitecture45."
+  },
+  "agent-code-planner-builder-19": {
+    "tools": [
+      "code-planner-planarchitecture55",
+      "code-planner-plantesting56",
+      "code-planner-planrefactor57",
+      "code-planner-organize19-implement1",
+      "code-planner-prioritize19-construct2"
+    ],
+    "description": "Role: builder; Domain: Code planner; Preferred tools: code-planner-planarchitecture55, code-planner-plantesting56, code-planner-planrefactor57."
+  },
+  "agent-code-planner-builder-3": {
+    "tools": [
+      "code-planner-planrefactor7",
+      "code-planner-planperformance8",
+      "code-planner-plansecurity9",
+      "code-planner-organize3-implement1",
+      "code-planner-prioritize3-construct2"
+    ],
+    "description": "Role: builder; Domain: Code planner; Preferred tools: code-planner-planrefactor7, code-planner-planperformance8, code-planner-plansecurity9."
+  },
+  "agent-code-planner-builder-7": {
+    "tools": [
+      "code-planner-plansecurity19",
+      "code-planner-plandocumentation20",
+      "code-planner-planmilestone21",
+      "code-planner-organize7-implement1",
+      "code-planner-prioritize7-construct2"
+    ],
+    "description": "Role: builder; Domain: Code planner; Preferred tools: code-planner-plansecurity19, code-planner-plandocumentation20, code-planner-planmilestone21."
+  },
+  "agent-code-planner-checker-12": {
+    "tools": [
+      "code-planner-plantimebox34",
+      "code-planner-planarchitecture35",
+      "code-planner-plantesting36",
+      "code-planner-organize12-validate1",
+      "code-planner-prioritize12-verify2"
+    ],
+    "description": "Role: checker; Domain: Code planner; Preferred tools: code-planner-plantimebox34, code-planner-planarchitecture35, code-planner-plantesting36."
+  },
+  "agent-code-planner-checker-16": {
+    "tools": [
+      "code-planner-plantesting46",
+      "code-planner-planrefactor47",
+      "code-planner-planperformance48",
+      "code-planner-organize16-validate1",
+      "code-planner-prioritize16-verify2"
+    ],
+    "description": "Role: checker; Domain: Code planner; Preferred tools: code-planner-plantesting46, code-planner-planrefactor47, code-planner-planperformance48."
+  },
+  "agent-code-planner-checker-20": {
+    "tools": [
+      "code-planner-planperformance58",
+      "code-planner-plansecurity59",
+      "code-planner-plandocumentation60",
+      "code-planner-organize20-validate1",
+      "code-planner-prioritize20-verify2"
+    ],
+    "description": "Role: checker; Domain: Code planner; Preferred tools: code-planner-planperformance58, code-planner-plansecurity59, code-planner-plandocumentation60."
+  },
+  "agent-code-planner-checker-4": {
+    "tools": [
+      "code-planner-plandocumentation10",
+      "code-planner-planmilestone11",
+      "code-planner-plandependency12",
+      "code-planner-organize4-validate1",
+      "code-planner-prioritize4-verify2"
+    ],
+    "description": "Role: checker; Domain: Code planner; Preferred tools: code-planner-plandocumentation10, code-planner-planmilestone11, code-planner-plandependency12."
+  },
+  "agent-code-planner-checker-8": {
+    "tools": [
+      "code-planner-plandependency22",
+      "code-planner-planrisk23",
+      "code-planner-plantimebox24",
+      "code-planner-organize8-validate1",
+      "code-planner-prioritize8-verify2"
+    ],
+    "description": "Role: checker; Domain: Code planner; Preferred tools: code-planner-plandependency22, code-planner-planrisk23, code-planner-plantimebox24."
+  },
+  "agent-code-planner-planner-1": {
+    "tools": [
+      "code-planner-planmilestone1",
+      "code-planner-plandependency2",
+      "code-planner-planrisk3",
+      "code-planner-organize1-strategy1",
+      "code-planner-prioritize1-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code planner; Preferred tools: code-planner-planmilestone1, code-planner-plandependency2, code-planner-planrisk3."
+  },
+  "agent-code-planner-planner-13": {
+    "tools": [
+      "code-planner-planrefactor37",
+      "code-planner-planperformance38",
+      "code-planner-plansecurity39",
+      "code-planner-organize13-strategy1",
+      "code-planner-prioritize13-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code planner; Preferred tools: code-planner-planrefactor37, code-planner-planperformance38, code-planner-plansecurity39."
+  },
+  "agent-code-planner-planner-17": {
+    "tools": [
+      "code-planner-plansecurity49",
+      "code-planner-plandocumentation50",
+      "code-planner-planmilestone51",
+      "code-planner-organize17-strategy1",
+      "code-planner-prioritize17-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code planner; Preferred tools: code-planner-plansecurity49, code-planner-plandocumentation50, code-planner-planmilestone51."
+  },
+  "agent-code-planner-planner-5": {
+    "tools": [
+      "code-planner-planrisk13",
+      "code-planner-plantimebox14",
+      "code-planner-planarchitecture15",
+      "code-planner-organize5-strategy1",
+      "code-planner-prioritize5-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code planner; Preferred tools: code-planner-planrisk13, code-planner-plantimebox14, code-planner-planarchitecture15."
+  },
+  "agent-code-planner-planner-9": {
+    "tools": [
+      "code-planner-planarchitecture25",
+      "code-planner-plantesting26",
+      "code-planner-planrefactor27",
+      "code-planner-organize9-strategy1",
+      "code-planner-prioritize9-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code planner; Preferred tools: code-planner-planarchitecture25, code-planner-plantesting26, code-planner-planrefactor27."
+  },
+  "agent-code-planner-researcher-10": {
+    "tools": [
+      "code-planner-planperformance28",
+      "code-planner-plansecurity29",
+      "code-planner-plandocumentation30",
+      "code-planner-organize10-analyze1",
+      "code-planner-prioritize10-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code planner; Preferred tools: code-planner-planperformance28, code-planner-plansecurity29, code-planner-plandocumentation30."
+  },
+  "agent-code-planner-researcher-14": {
+    "tools": [
+      "code-planner-plandocumentation40",
+      "code-planner-planmilestone41",
+      "code-planner-plandependency42",
+      "code-planner-organize14-analyze1",
+      "code-planner-prioritize14-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code planner; Preferred tools: code-planner-plandocumentation40, code-planner-planmilestone41, code-planner-plandependency42."
+  },
+  "agent-code-planner-researcher-18": {
+    "tools": [
+      "code-planner-plandependency52",
+      "code-planner-planrisk53",
+      "code-planner-plantimebox54",
+      "code-planner-organize18-analyze1",
+      "code-planner-prioritize18-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code planner; Preferred tools: code-planner-plandependency52, code-planner-planrisk53, code-planner-plantimebox54."
+  },
+  "agent-code-planner-researcher-2": {
+    "tools": [
+      "code-planner-plantimebox4",
+      "code-planner-planarchitecture5",
+      "code-planner-plantesting6",
+      "code-planner-organize2-analyze1",
+      "code-planner-prioritize2-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code planner; Preferred tools: code-planner-plantimebox4, code-planner-planarchitecture5, code-planner-plantesting6."
+  },
+  "agent-code-planner-researcher-6": {
+    "tools": [
+      "code-planner-plantesting16",
+      "code-planner-planrefactor17",
+      "code-planner-planperformance18",
+      "code-planner-organize6-analyze1",
+      "code-planner-prioritize6-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code planner; Preferred tools: code-planner-plantesting16, code-planner-planrefactor17, code-planner-planperformance18."
+  },
+  "agent-code-refactoring-builder-11": {
+    "tools": [
+      "code-refactoring-refactorrename31",
+      "code-refactoring-refactorextract32",
+      "code-refactoring-refactorsimplify33",
+      "code-refactoring-restructure11-implement1",
+      "code-refactoring-modernize11-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorrename31, code-refactoring-refactorextract32, code-refactoring-refactorsimplify33."
+  },
+  "agent-code-refactoring-builder-15": {
+    "tools": [
+      "code-refactoring-refactorsimplify43",
+      "code-refactoring-refactornormalize44",
+      "code-refactoring-refactordedupe45",
+      "code-refactoring-restructure15-implement1",
+      "code-refactoring-modernize15-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorsimplify43, code-refactoring-refactornormalize44, code-refactoring-refactordedupe45."
+  },
+  "agent-code-refactoring-builder-19": {
+    "tools": [
+      "code-refactoring-refactordedupe55",
+      "code-refactoring-refactorcleanup56",
+      "code-refactoring-refactorformat57",
+      "code-refactoring-restructure19-implement1",
+      "code-refactoring-modernize19-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Refactoring; Preferred tools: code-refactoring-refactordedupe55, code-refactoring-refactorcleanup56, code-refactoring-refactorformat57."
+  },
+  "agent-code-refactoring-builder-3": {
+    "tools": [
+      "code-refactoring-refactorformat7",
+      "code-refactoring-refactoroptimize8",
+      "code-refactoring-refactordecompose9",
+      "code-refactoring-restructure3-implement1",
+      "code-refactoring-modernize3-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorformat7, code-refactoring-refactoroptimize8, code-refactoring-refactordecompose9."
+  },
+  "agent-code-refactoring-builder-7": {
+    "tools": [
+      "code-refactoring-refactordecompose19",
+      "code-refactoring-refactorguard20",
+      "code-refactoring-refactorrename21",
+      "code-refactoring-restructure7-implement1",
+      "code-refactoring-modernize7-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Refactoring; Preferred tools: code-refactoring-refactordecompose19, code-refactoring-refactorguard20, code-refactoring-refactorrename21."
+  },
+  "agent-code-refactoring-checker-12": {
+    "tools": [
+      "code-refactoring-refactornormalize34",
+      "code-refactoring-refactordedupe35",
+      "code-refactoring-refactorcleanup36",
+      "code-refactoring-restructure12-validate1",
+      "code-refactoring-modernize12-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Refactoring; Preferred tools: code-refactoring-refactornormalize34, code-refactoring-refactordedupe35, code-refactoring-refactorcleanup36."
+  },
+  "agent-code-refactoring-checker-16": {
+    "tools": [
+      "code-refactoring-refactorcleanup46",
+      "code-refactoring-refactorformat47",
+      "code-refactoring-refactoroptimize48",
+      "code-refactoring-restructure16-validate1",
+      "code-refactoring-modernize16-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorcleanup46, code-refactoring-refactorformat47, code-refactoring-refactoroptimize48."
+  },
+  "agent-code-refactoring-checker-20": {
+    "tools": [
+      "code-refactoring-refactoroptimize58",
+      "code-refactoring-refactordecompose59",
+      "code-refactoring-refactorguard60",
+      "code-refactoring-restructure20-validate1",
+      "code-refactoring-modernize20-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Refactoring; Preferred tools: code-refactoring-refactoroptimize58, code-refactoring-refactordecompose59, code-refactoring-refactorguard60."
+  },
+  "agent-code-refactoring-checker-4": {
+    "tools": [
+      "code-refactoring-refactorguard10",
+      "code-refactoring-refactorrename11",
+      "code-refactoring-refactorextract12",
+      "code-refactoring-restructure4-validate1",
+      "code-refactoring-modernize4-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorguard10, code-refactoring-refactorrename11, code-refactoring-refactorextract12."
+  },
+  "agent-code-refactoring-checker-8": {
+    "tools": [
+      "code-refactoring-refactorextract22",
+      "code-refactoring-refactorsimplify23",
+      "code-refactoring-refactornormalize24",
+      "code-refactoring-restructure8-validate1",
+      "code-refactoring-modernize8-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorextract22, code-refactoring-refactorsimplify23, code-refactoring-refactornormalize24."
+  },
+  "agent-code-refactoring-planner-1": {
+    "tools": [
+      "code-refactoring-refactorrename1",
+      "code-refactoring-refactorextract2",
+      "code-refactoring-refactorsimplify3",
+      "code-refactoring-restructure1-strategy1",
+      "code-refactoring-modernize1-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorrename1, code-refactoring-refactorextract2, code-refactoring-refactorsimplify3."
+  },
+  "agent-code-refactoring-planner-13": {
+    "tools": [
+      "code-refactoring-refactorformat37",
+      "code-refactoring-refactoroptimize38",
+      "code-refactoring-refactordecompose39",
+      "code-refactoring-restructure13-strategy1",
+      "code-refactoring-modernize13-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorformat37, code-refactoring-refactoroptimize38, code-refactoring-refactordecompose39."
+  },
+  "agent-code-refactoring-planner-17": {
+    "tools": [
+      "code-refactoring-refactordecompose49",
+      "code-refactoring-refactorguard50",
+      "code-refactoring-refactorrename51",
+      "code-refactoring-restructure17-strategy1",
+      "code-refactoring-modernize17-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Refactoring; Preferred tools: code-refactoring-refactordecompose49, code-refactoring-refactorguard50, code-refactoring-refactorrename51."
+  },
+  "agent-code-refactoring-planner-5": {
+    "tools": [
+      "code-refactoring-refactorsimplify13",
+      "code-refactoring-refactornormalize14",
+      "code-refactoring-refactordedupe15",
+      "code-refactoring-restructure5-strategy1",
+      "code-refactoring-modernize5-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorsimplify13, code-refactoring-refactornormalize14, code-refactoring-refactordedupe15."
+  },
+  "agent-code-refactoring-planner-9": {
+    "tools": [
+      "code-refactoring-refactordedupe25",
+      "code-refactoring-refactorcleanup26",
+      "code-refactoring-refactorformat27",
+      "code-refactoring-restructure9-strategy1",
+      "code-refactoring-modernize9-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Refactoring; Preferred tools: code-refactoring-refactordedupe25, code-refactoring-refactorcleanup26, code-refactoring-refactorformat27."
+  },
+  "agent-code-refactoring-researcher-10": {
+    "tools": [
+      "code-refactoring-refactoroptimize28",
+      "code-refactoring-refactordecompose29",
+      "code-refactoring-refactorguard30",
+      "code-refactoring-restructure10-analyze1",
+      "code-refactoring-modernize10-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Refactoring; Preferred tools: code-refactoring-refactoroptimize28, code-refactoring-refactordecompose29, code-refactoring-refactorguard30."
+  },
+  "agent-code-refactoring-researcher-14": {
+    "tools": [
+      "code-refactoring-refactorguard40",
+      "code-refactoring-refactorrename41",
+      "code-refactoring-refactorextract42",
+      "code-refactoring-restructure14-analyze1",
+      "code-refactoring-modernize14-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorguard40, code-refactoring-refactorrename41, code-refactoring-refactorextract42."
+  },
+  "agent-code-refactoring-researcher-18": {
+    "tools": [
+      "code-refactoring-refactorextract52",
+      "code-refactoring-refactorsimplify53",
+      "code-refactoring-refactornormalize54",
+      "code-refactoring-restructure18-analyze1",
+      "code-refactoring-modernize18-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorextract52, code-refactoring-refactorsimplify53, code-refactoring-refactornormalize54."
+  },
+  "agent-code-refactoring-researcher-2": {
+    "tools": [
+      "code-refactoring-refactornormalize4",
+      "code-refactoring-refactordedupe5",
+      "code-refactoring-refactorcleanup6",
+      "code-refactoring-restructure2-analyze1",
+      "code-refactoring-modernize2-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Refactoring; Preferred tools: code-refactoring-refactornormalize4, code-refactoring-refactordedupe5, code-refactoring-refactorcleanup6."
+  },
+  "agent-code-refactoring-researcher-6": {
+    "tools": [
+      "code-refactoring-refactorcleanup16",
+      "code-refactoring-refactorformat17",
+      "code-refactoring-refactoroptimize18",
+      "code-refactoring-restructure6-analyze1",
+      "code-refactoring-modernize6-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Refactoring; Preferred tools: code-refactoring-refactorcleanup16, code-refactoring-refactorformat17, code-refactoring-refactoroptimize18."
+  },
+  "agent-code-testing-builder-11": {
+    "tools": [
+      "code-testing-testunit31",
+      "code-testing-testedge32",
+      "code-testing-testtable33",
+      "code-testing-stress11-implement1",
+      "code-testing-fuzz11-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Testing; Preferred tools: code-testing-testunit31, code-testing-testedge32, code-testing-testtable33."
+  },
+  "agent-code-testing-builder-15": {
+    "tools": [
+      "code-testing-testtable43",
+      "code-testing-testproperty44",
+      "code-testing-testfuzz45",
+      "code-testing-stress15-implement1",
+      "code-testing-fuzz15-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Testing; Preferred tools: code-testing-testtable43, code-testing-testproperty44, code-testing-testfuzz45."
+  },
+  "agent-code-testing-builder-19": {
+    "tools": [
+      "code-testing-testfuzz55",
+      "code-testing-testregression56",
+      "code-testing-testintegration57",
+      "code-testing-stress19-implement1",
+      "code-testing-fuzz19-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Testing; Preferred tools: code-testing-testfuzz55, code-testing-testregression56, code-testing-testintegration57."
+  },
+  "agent-code-testing-builder-3": {
+    "tools": [
+      "code-testing-testintegration7",
+      "code-testing-testmutation8",
+      "code-testing-testboundary9",
+      "code-testing-stress3-implement1",
+      "code-testing-fuzz3-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Testing; Preferred tools: code-testing-testintegration7, code-testing-testmutation8, code-testing-testboundary9."
+  },
+  "agent-code-testing-builder-7": {
+    "tools": [
+      "code-testing-testboundary19",
+      "code-testing-testnegative20",
+      "code-testing-testunit21",
+      "code-testing-stress7-implement1",
+      "code-testing-fuzz7-construct2"
+    ],
+    "description": "Role: builder; Domain: Code Testing; Preferred tools: code-testing-testboundary19, code-testing-testnegative20, code-testing-testunit21."
+  },
+  "agent-code-testing-checker-12": {
+    "tools": [
+      "code-testing-testproperty34",
+      "code-testing-testfuzz35",
+      "code-testing-testregression36",
+      "code-testing-stress12-validate1",
+      "code-testing-fuzz12-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Testing; Preferred tools: code-testing-testproperty34, code-testing-testfuzz35, code-testing-testregression36."
+  },
+  "agent-code-testing-checker-16": {
+    "tools": [
+      "code-testing-testregression46",
+      "code-testing-testintegration47",
+      "code-testing-testmutation48",
+      "code-testing-stress16-validate1",
+      "code-testing-fuzz16-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Testing; Preferred tools: code-testing-testregression46, code-testing-testintegration47, code-testing-testmutation48."
+  },
+  "agent-code-testing-checker-20": {
+    "tools": [
+      "code-testing-testmutation58",
+      "code-testing-testboundary59",
+      "code-testing-testnegative60",
+      "code-testing-stress20-validate1",
+      "code-testing-fuzz20-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Testing; Preferred tools: code-testing-testmutation58, code-testing-testboundary59, code-testing-testnegative60."
+  },
+  "agent-code-testing-checker-4": {
+    "tools": [
+      "code-testing-testnegative10",
+      "code-testing-testunit11",
+      "code-testing-testedge12",
+      "code-testing-stress4-validate1",
+      "code-testing-fuzz4-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Testing; Preferred tools: code-testing-testnegative10, code-testing-testunit11, code-testing-testedge12."
+  },
+  "agent-code-testing-checker-8": {
+    "tools": [
+      "code-testing-testedge22",
+      "code-testing-testtable23",
+      "code-testing-testproperty24",
+      "code-testing-stress8-validate1",
+      "code-testing-fuzz8-verify2"
+    ],
+    "description": "Role: checker; Domain: Code Testing; Preferred tools: code-testing-testedge22, code-testing-testtable23, code-testing-testproperty24."
+  },
+  "agent-code-testing-planner-1": {
+    "tools": [
+      "code-testing-testunit1",
+      "code-testing-testedge2",
+      "code-testing-testtable3",
+      "code-testing-stress1-strategy1",
+      "code-testing-fuzz1-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Testing; Preferred tools: code-testing-testunit1, code-testing-testedge2, code-testing-testtable3."
+  },
+  "agent-code-testing-planner-13": {
+    "tools": [
+      "code-testing-testintegration37",
+      "code-testing-testmutation38",
+      "code-testing-testboundary39",
+      "code-testing-stress13-strategy1",
+      "code-testing-fuzz13-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Testing; Preferred tools: code-testing-testintegration37, code-testing-testmutation38, code-testing-testboundary39."
+  },
+  "agent-code-testing-planner-17": {
+    "tools": [
+      "code-testing-testboundary49",
+      "code-testing-testnegative50",
+      "code-testing-testunit51",
+      "code-testing-stress17-strategy1",
+      "code-testing-fuzz17-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Testing; Preferred tools: code-testing-testboundary49, code-testing-testnegative50, code-testing-testunit51."
+  },
+  "agent-code-testing-planner-5": {
+    "tools": [
+      "code-testing-testtable13",
+      "code-testing-testproperty14",
+      "code-testing-testfuzz15",
+      "code-testing-stress5-strategy1",
+      "code-testing-fuzz5-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Testing; Preferred tools: code-testing-testtable13, code-testing-testproperty14, code-testing-testfuzz15."
+  },
+  "agent-code-testing-planner-9": {
+    "tools": [
+      "code-testing-testfuzz25",
+      "code-testing-testregression26",
+      "code-testing-testintegration27",
+      "code-testing-stress9-strategy1",
+      "code-testing-fuzz9-workflow2"
+    ],
+    "description": "Role: planner; Domain: Code Testing; Preferred tools: code-testing-testfuzz25, code-testing-testregression26, code-testing-testintegration27."
+  },
+  "agent-code-testing-researcher-10": {
+    "tools": [
+      "code-testing-testmutation28",
+      "code-testing-testboundary29",
+      "code-testing-testnegative30",
+      "code-testing-stress10-analyze1",
+      "code-testing-fuzz10-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Testing; Preferred tools: code-testing-testmutation28, code-testing-testboundary29, code-testing-testnegative30."
+  },
+  "agent-code-testing-researcher-14": {
+    "tools": [
+      "code-testing-testnegative40",
+      "code-testing-testunit41",
+      "code-testing-testedge42",
+      "code-testing-stress14-analyze1",
+      "code-testing-fuzz14-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Testing; Preferred tools: code-testing-testnegative40, code-testing-testunit41, code-testing-testedge42."
+  },
+  "agent-code-testing-researcher-18": {
+    "tools": [
+      "code-testing-testedge52",
+      "code-testing-testtable53",
+      "code-testing-testproperty54",
+      "code-testing-stress18-analyze1",
+      "code-testing-fuzz18-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Testing; Preferred tools: code-testing-testedge52, code-testing-testtable53, code-testing-testproperty54."
+  },
+  "agent-code-testing-researcher-2": {
+    "tools": [
+      "code-testing-testproperty4",
+      "code-testing-testfuzz5",
+      "code-testing-testregression6",
+      "code-testing-stress2-analyze1",
+      "code-testing-fuzz2-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Testing; Preferred tools: code-testing-testproperty4, code-testing-testfuzz5, code-testing-testregression6."
+  },
+  "agent-code-testing-researcher-6": {
+    "tools": [
+      "code-testing-testregression16",
+      "code-testing-testintegration17",
+      "code-testing-testmutation18",
+      "code-testing-stress6-analyze1",
+      "code-testing-fuzz6-investigate2"
+    ],
+    "description": "Role: researcher; Domain: Code Testing; Preferred tools: code-testing-testregression16, code-testing-testintegration17, code-testing-testmutation18."
+  },
+  "builder-algorithm-specialist": {
+    "tools": [
+      "algorithm-sorting-optimize",
+      "algorithm-search-design",
+      "algorithm-complexity-analyze",
+      "algorithm-dataflow-trace",
+      "algorithm-correctness-prove"
+    ],
+    "description": "Algorithms specialist focusing on sorting, searching, complexity"
+  },
+  "builder-datastructure-architect": {
+    "tools": [
+      "datastructure-array-design",
+      "datastructure-tree-build",
+      "datastructure-graph-construct",
+      "datastructure-hashmap-optimize",
+      "datastructure-custom-create"
+    ],
+    "description": "Data structure architect for arrays, trees, graphs, hashmaps"
+  },
+  "builder-dp-expert": {
+    "tools": [
+      "dp-memoization-design",
+      "dp-tabulation-build",
+      "dp-state-define",
+      "dp-transition-derive",
+      "dp-optimize-space"
+    ],
+    "description": "Dynamic programming expert for memoization and tabulation"
+  },
+  "builder-edgecase-guardian": {
+    "tools": [
+      "edgecase-empty-handle",
+      "edgecase-boundary-check",
+      "edgecase-null-protect",
+      "edgecase-overflow-prevent",
+      "edgecase-invalid-validate"
+    ],
+    "description": "Edge case guardian for empty, boundary, null, overflow"
+  },
+  "builder-function-generator": {
+    "tools": [
+      "function-signature-create",
+      "function-body-generate",
+      "function-params-validate",
+      "function-return-format",
+      "function-docstring-write"
+    ],
+    "description": "Function generator for signatures, bodies, validation"
+  },
+  "builder-graph-algorithmist": {
+    "tools": [
+      "graph-traverse-bfs",
+      "graph-traverse-dfs",
+      "graph-shortest-path",
+      "graph-cycle-detect",
+      "graph-topology-sort"
+    ],
+    "description": "Graph algorithmist for BFS, DFS, shortest paths"
+  },
+  "builder-greedy-optimizer": {
+    "tools": [
+      "greedy-choice-select",
+      "greedy-local-optimize",
+      "greedy-proof-construct",
+      "greedy-counterexample-check",
+      "greedy-alternative-compare"
+    ],
+    "description": "Greedy optimizer for local choices and proofs"
+  },
+  "builder-io-handler": {
+    "tools": [
+      "io-input-parse",
+      "io-output-format",
+      "io-file-read",
+      "io-stream-process",
+      "io-error-handle"
+    ],
+    "description": "I/O handler for parsing, formatting, file operations"
+  },
+  "builder-math-solver": {
+    "tools": [
+      "math-equation-solve",
+      "math-number-theory",
+      "math-combinatorics-compute",
+      "math-geometry-calculate",
+      "math-modulo-operation"
+    ],
+    "description": "Math solver for equations, number theory, combinatorics"
+  },
+  "builder-module-architect": {
+    "tools": [
+      "module-structure-design",
+      "module-import-organize",
+      "module-interface-define",
+      "module-dependency-manage",
+      "module-namespace-plan"
+    ],
+    "description": "Module architect for structure, imports, interfaces"
+  },
+  "builder-parsing-specialist": {
+    "tools": [
+      "parsing-string-tokenize",
+      "parsing-syntax-analyze",
+      "parsing-ast-build",
+      "parsing-expression-evaluate",
+      "parsing-grammar-validate"
+    ],
+    "description": "Parsing specialist for tokenization and syntax analysis"
+  },
+  "builder-recursion-expert": {
+    "tools": [
+      "recursion-base-define",
+      "recursion-recursive-build",
+      "recursion-tail-optimize",
+      "recursion-stack-manage",
+      "recursion-iterate-convert"
+    ],
+    "description": "Recursion expert for base cases and optimization"
+  },
+  "builder-robustness-engineer": {
+    "tools": [
+      "robustness-error-handle",
+      "robustness-input-validate",
+      "robustness-exception-catch",
+      "robustness-fallback-design",
+      "robustness-recovery-implement"
+    ],
+    "description": "Robustness engineer for error handling and validation"
+  },
+  "builder-snippet-assembler": {
+    "tools": [
+      "snippet-fragment-collect",
+      "snippet-code-merge",
+      "snippet-dependency-resolve",
+      "snippet-conflict-handle",
+      "snippet-integration-test"
+    ],
+    "description": "Snippet assembler for merging and resolving fragments"
+  },
+  "builder-string-manipulator": {
+    "tools": [
+      "string-pattern-match",
+      "string-transform-apply",
+      "string-split-join",
+      "string-encode-decode",
+      "string-format-template"
+    ],
+    "description": "String manipulator for patterns, transforms, encoding"
+  }
+}

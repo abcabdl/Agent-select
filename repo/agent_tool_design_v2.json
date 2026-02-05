@@ -1,0 +1,1540 @@
+{
+  "StringMaster": {
+    "description": "Expert in string manipulation: Unicode, parsing, formatting, escape sequences, pattern matching",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "string-processing"
+    ],
+    "tools": [
+      "string-unicode-normalize-4o-t35",
+      "string-parsing-tokenize-4o-t36",
+      "string-format-template-4omini-t37",
+      "string-escape-sanitize-4o-t28",
+      "string-pattern-match-4omini-t38"
+    ]
+  },
+  "AlgorithmArchitect": {
+    "description": "Master of algorithm design: sorting, searching, complexity analysis, optimization strategies",
+    "role_tags": [
+      "builder",
+      "planner"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "algorithm-design"
+    ],
+    "tools": [
+      "algorithm-sorting-optimize-4o-t5",
+      "algorithm-searching-binary-4o-t10",
+      "algorithm-complexity-analyze-4omini-t6",
+      "algorithm-greedy-design-4o-t26",
+      "algorithm-divide-conquer-4o-t18"
+    ]
+  },
+  "DPOptimizer": {
+    "description": "Dynamic programming specialist: state definition, recurrence relations, memoization, space optimization",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "optimization"
+    ],
+    "tools": [
+      "dp-state-define-4o-t20",
+      "dp-recurrence-build-4o-t21",
+      "dp-memoization-apply-4omini-t22",
+      "dp-space-optimize-4o-t18",
+      "dp-tabulation-construct-4o-t24"
+    ]
+  },
+  "RecursionExpert": {
+    "description": "Recursion optimization master: base case design, tail recursion, stack management, iterative conversion",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "recursion"
+    ],
+    "tools": [
+      "recursion-basecase-design-4o-t20",
+      "recursion-tail-optimize-4o-t21",
+      "recursion-stack-manage-4omini-t22",
+      "recursion-iterative-convert-4o-t23",
+      "recursion-depth-control-4o-t24"
+    ]
+  },
+  "GraphNavigator": {
+    "description": "Graph algorithm specialist: BFS, DFS, shortest path, topological sort, cycle detection",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "graph-algorithms"
+    ],
+    "tools": [
+      "graph-bfs-traverse-4o-t18",
+      "graph-dfs-explore-4o-t19",
+      "graph-shortest-dijkstra-4o-t20",
+      "graph-topology-sort-4omini-t21",
+      "graph-cycle-detect-4o-t22"
+    ]
+  },
+  "DataStructureDesigner": {
+    "description": "Data structure architect: arrays, trees, hashmaps, custom structures, memory optimization",
+    "role_tags": [
+      "builder",
+      "planner"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "data-structures"
+    ],
+    "tools": [
+      "datastructure-array-design-4o-t40",
+      "datastructure-tree-build-4o-t41",
+      "datastructure-hashmap-optimize-4omini-t42",
+      "datastructure-custom-create-4o-t48",
+      "datastructure-memory-manage-4o-t44"
+    ]
+  },
+  "EdgeCaseGuardian": {
+    "description": "Edge case specialist: boundary validation, null handling, overflow prevention, empty input checks",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing",
+      "validation"
+    ],
+    "tools": [
+      "edgecase-boundary-validate-4o-t28",
+      "edgecase-null-protect-4o-t29",
+      "edgecase-overflow-prevent-4omini-t30",
+      "edgecase-empty-handle-4o-t31",
+      "edgecase-invalid-reject-4o-t32"
+    ]
+  },
+  "RobustnessEngineer": {
+    "description": "Robustness expert: error handling, exception catching, fallback strategies, recovery mechanisms",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing",
+      "error-handling"
+    ],
+    "tools": [
+      "robustness-error-handle-4o-t30",
+      "robustness-exception-catch-4o-t31",
+      "robustness-fallback-design-4omini-t32",
+      "robustness-recovery-implement-4o-t32",
+      "robustness-graceful-degrade-4o-t34"
+    ]
+  },
+  "MathematicalSolver": {
+    "description": "Mathematical computation expert: number theory, modulo, combinatorics, geometry, precision handling",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "mathematics"
+    ],
+    "tools": [
+      "math-number-theory-4o-t10",
+      "math-modulo-compute-4o-t11",
+      "math-combinatorics-calc-4omini-t12",
+      "math-geometry-solve-4o-t13",
+      "math-precision-handle-4o-t14"
+    ]
+  },
+  "IOProcessor": {
+    "description": "I/O operations specialist: parsing, formatting, file operations, stream processing, validation",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "io-operations"
+    ],
+    "tools": [
+      "io-parsing-extract-4o-t32",
+      "io-formatting-output-4omini-t33",
+      "io-file-operations-4o-t34",
+      "io-stream-process-4o-t35",
+      "io-validation-check-4o-t36"
+    ]
+  },
+  "ModuleArchitect": {
+    "description": "Module design expert: structure planning, dependency management, interface definition, namespace organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner",
+      "architecture"
+    ],
+    "tools": [
+      "module-structure-plan-4o-t65",
+      "module-dependency-manage-4o-t66",
+      "module-interface-define-4omini-t67",
+      "module-namespace-organize-4o-t68",
+      "module-skeleton-build-4o-t69"
+    ]
+  },
+  "ParsingSpecialist": {
+    "description": "Parsing expert: AST building, tokenization, grammar validation, expression evaluation, syntax analysis",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "parsing"
+    ],
+    "tools": [
+      "parsing-ast-build-4o-t45",
+      "parsing-tokenize-split-4o-t30",
+      "parsing-grammar-validate-4omini-t47",
+      "parsing-expression-eval-4o-t48",
+      "parsing-syntax-analyze-4o-t49"
+    ]
+  },
+  "GreedyStrategist": {
+    "description": "Greedy algorithm expert: local optimization, choice selection, proof construction, counterexample checking",
+    "role_tags": [
+      "builder",
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "algorithms"
+    ],
+    "tools": [
+      "greedy-choice-select-4o-t20",
+      "greedy-optimize-local-4o-t16",
+      "greedy-proof-construct-4omini-t22",
+      "greedy-counterexample-check-4o-t23",
+      "greedy-alternative-compare-4o-t24"
+    ]
+  },
+  "FunctionBodyGenerator": {
+    "description": "Function implementation expert: body generation, parameter validation, return formatting, docstring creation",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "implementation"
+    ],
+    "tools": [
+      "function-body-generate-4o-t40",
+      "function-params-validate-4o-t41",
+      "function-return-format-4omini-t42",
+      "function-docstring-write-4o-t43",
+      "function-signature-create-4o-t44"
+    ]
+  },
+  "SnippetAssembler": {
+    "description": "Code fragment integrator: snippet combination, logic assembly, flow control, integration patterns",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation",
+      "integration"
+    ],
+    "tools": [
+      "snippet-combine-logic-4o-t60",
+      "snippet-assemble-flow-4o-t61",
+      "snippet-integrate-pattern-4omini-t62",
+      "snippet-merge-fragments-4o-t63",
+      "snippet-unify-style-4o-t64"
+    ]
+  },
+  "CodeBuilder-AlgoDesign1": {
+    "description": "Code builder specializing in algodesign: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-algodesign-4o-t20-v1",
+      "build-optimize-algodesign-4omini-t15-v1",
+      "build-structure-algodesign-4o-t25-v1",
+      "build-validate-algodesign-4o-t18-v1",
+      "build-refine-algodesign-4o-t28-v1"
+    ]
+  },
+  "CodeBuilder-DataStruct2": {
+    "description": "Code builder specializing in datastruct: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-datastruct-4o-t42-v2",
+      "build-optimize-datastruct-4omini-t37-v2",
+      "build-structure-datastruct-4o-t47-v2",
+      "build-validate-datastruct-4o-t40-v2",
+      "build-refine-datastruct-4o-t50-v2"
+    ]
+  },
+  "CodeBuilder-MathCalc3": {
+    "description": "Code builder specializing in mathcalc: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-mathcalc-4o-t12-v3",
+      "build-optimize-mathcalc-4omini-t6-v3",
+      "build-structure-mathcalc-4o-t17-v3",
+      "build-validate-mathcalc-4o-t10-v3",
+      "build-refine-mathcalc-4o-t20-v3"
+    ]
+  },
+  "CodeBuilder-CodeGen4": {
+    "description": "Code builder specializing in codegen: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-codegen-4o-t40-v4",
+      "build-optimize-codegen-4omini-t35-v4",
+      "build-structure-codegen-4o-t45-v4",
+      "build-validate-codegen-4o-t38-v4",
+      "build-refine-codegen-4o-t48-v4"
+    ]
+  },
+  "CodeBuilder-StringOps5": {
+    "description": "Code builder specializing in stringops: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-stringops-4o-t38-v5",
+      "build-optimize-stringops-4omini-t33-v5",
+      "build-structure-stringops-4o-t43-v5",
+      "build-validate-stringops-4o-t36-v5",
+      "build-refine-stringops-4o-t46-v5"
+    ]
+  },
+  "CodeBuilder-AlgoDesign6": {
+    "description": "Code builder specializing in algodesign: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-algodesign-4o-t20-v6",
+      "build-optimize-algodesign-4omini-t15-v6",
+      "build-structure-algodesign-4o-t25-v6",
+      "build-validate-algodesign-4o-t18-v6",
+      "build-refine-algodesign-4o-t28-v6"
+    ]
+  },
+  "CodeBuilder-DataStruct7": {
+    "description": "Code builder specializing in datastruct: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-datastruct-4o-t42-v7",
+      "build-optimize-datastruct-4omini-t37-v7",
+      "build-structure-datastruct-4o-t47-v7",
+      "build-validate-datastruct-4o-t40-v7",
+      "build-refine-datastruct-4o-t50-v7"
+    ]
+  },
+  "CodeBuilder-MathCalc8": {
+    "description": "Code builder specializing in mathcalc: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-mathcalc-4o-t12-v8",
+      "build-optimize-mathcalc-4omini-t6-v8",
+      "build-structure-mathcalc-4o-t17-v8",
+      "build-validate-mathcalc-4o-t10-v8",
+      "build-refine-mathcalc-4o-t20-v8"
+    ]
+  },
+  "CodeBuilder-CodeGen9": {
+    "description": "Code builder specializing in codegen: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-codegen-4o-t40-v9",
+      "build-optimize-codegen-4omini-t35-v9",
+      "build-structure-codegen-4o-t45-v9",
+      "build-validate-codegen-4o-t38-v9",
+      "build-refine-codegen-4o-t48-v9"
+    ]
+  },
+  "CodeBuilder-StringOps10": {
+    "description": "Code builder specializing in stringops: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-stringops-4o-t38-v10",
+      "build-optimize-stringops-4omini-t33-v10",
+      "build-structure-stringops-4o-t43-v10",
+      "build-validate-stringops-4o-t36-v10",
+      "build-refine-stringops-4o-t46-v10"
+    ]
+  },
+  "CodeBuilder-AlgoDesign11": {
+    "description": "Code builder specializing in algodesign: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-algodesign-4o-t20-v11",
+      "build-optimize-algodesign-4omini-t15-v11",
+      "build-structure-algodesign-4o-t25-v11",
+      "build-validate-algodesign-4o-t18-v11",
+      "build-refine-algodesign-4o-t28-v11"
+    ]
+  },
+  "CodeBuilder-DataStruct12": {
+    "description": "Code builder specializing in datastruct: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-datastruct-4o-t42-v12",
+      "build-optimize-datastruct-4omini-t37-v12",
+      "build-structure-datastruct-4o-t47-v12",
+      "build-validate-datastruct-4o-t40-v12",
+      "build-refine-datastruct-4o-t50-v12"
+    ]
+  },
+  "CodeBuilder-MathCalc13": {
+    "description": "Code builder specializing in mathcalc: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-mathcalc-4o-t12-v13",
+      "build-optimize-mathcalc-4omini-t6-v13",
+      "build-structure-mathcalc-4o-t17-v13",
+      "build-validate-mathcalc-4o-t10-v13",
+      "build-refine-mathcalc-4o-t20-v13"
+    ]
+  },
+  "CodeBuilder-CodeGen14": {
+    "description": "Code builder specializing in codegen: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-codegen-4o-t40-v14",
+      "build-optimize-codegen-4omini-t35-v14",
+      "build-structure-codegen-4o-t45-v14",
+      "build-validate-codegen-4o-t38-v14",
+      "build-refine-codegen-4o-t48-v14"
+    ]
+  },
+  "CodeBuilder-StringOps15": {
+    "description": "Code builder specializing in stringops: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-stringops-4o-t38-v15",
+      "build-optimize-stringops-4omini-t33-v15",
+      "build-structure-stringops-4o-t43-v15",
+      "build-validate-stringops-4o-t36-v15",
+      "build-refine-stringops-4o-t46-v15"
+    ]
+  },
+  "CodeBuilder-AlgoDesign16": {
+    "description": "Code builder specializing in algodesign: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-algodesign-4o-t20-v16",
+      "build-optimize-algodesign-4omini-t15-v16",
+      "build-structure-algodesign-4o-t25-v16",
+      "build-validate-algodesign-4o-t18-v16",
+      "build-refine-algodesign-4o-t28-v16"
+    ]
+  },
+  "CodeBuilder-DataStruct17": {
+    "description": "Code builder specializing in datastruct: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-datastruct-4o-t42-v17",
+      "build-optimize-datastruct-4omini-t37-v17",
+      "build-structure-datastruct-4o-t47-v17",
+      "build-validate-datastruct-4o-t40-v17",
+      "build-refine-datastruct-4o-t50-v17"
+    ]
+  },
+  "CodeBuilder-MathCalc18": {
+    "description": "Code builder specializing in mathcalc: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-mathcalc-4o-t12-v18",
+      "build-optimize-mathcalc-4omini-t6-v18",
+      "build-structure-mathcalc-4o-t17-v18",
+      "build-validate-mathcalc-4o-t10-v18",
+      "build-refine-mathcalc-4o-t20-v18"
+    ]
+  },
+  "CodeBuilder-CodeGen19": {
+    "description": "Code builder specializing in codegen: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-codegen-4o-t40-v19",
+      "build-optimize-codegen-4omini-t35-v19",
+      "build-structure-codegen-4o-t45-v19",
+      "build-validate-codegen-4o-t38-v19",
+      "build-refine-codegen-4o-t48-v19"
+    ]
+  },
+  "CodeBuilder-StringOps20": {
+    "description": "Code builder specializing in stringops: implementation, optimization, structure",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "code-generation"
+    ],
+    "tools": [
+      "build-impl-stringops-4o-t38-v20",
+      "build-optimize-stringops-4omini-t33-v20",
+      "build-structure-stringops-4o-t43-v20",
+      "build-validate-stringops-4o-t36-v20",
+      "build-refine-stringops-4o-t46-v20"
+    ]
+  },
+  "QualityChecker-Robustness1": {
+    "description": "Quality checker focusing on robustness: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-robustness-4o-t27-v1",
+      "check-verify-robustness-4omini-t30-v1",
+      "check-edgecase-robustness-4o-t32-v1",
+      "check-boundary-robustness-4o-t28-v1",
+      "check-assert-robustness-4o-t31-v1"
+    ]
+  },
+  "QualityChecker-TypeCheck2": {
+    "description": "Quality checker focusing on typecheck: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-typecheck-4o-t30-v2",
+      "check-verify-typecheck-4omini-t32-v2",
+      "check-edgecase-typecheck-4o-t34-v2",
+      "check-boundary-typecheck-4o-t31-v2",
+      "check-assert-typecheck-4o-t33-v2"
+    ]
+  },
+  "QualityChecker-BoundCheck3": {
+    "description": "Quality checker focusing on boundcheck: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-boundcheck-4o-t27-v3",
+      "check-verify-boundcheck-4omini-t30-v3",
+      "check-edgecase-boundcheck-4o-t32-v3",
+      "check-boundary-boundcheck-4o-t28-v3",
+      "check-assert-boundcheck-4o-t31-v3"
+    ]
+  },
+  "QualityChecker-ErrorHandle4": {
+    "description": "Quality checker focusing on errorhandle: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-errorhandle-4o-t30-v4",
+      "check-verify-errorhandle-4omini-t32-v4",
+      "check-edgecase-errorhandle-4o-t34-v4",
+      "check-boundary-errorhandle-4o-t31-v4",
+      "check-assert-errorhandle-4o-t33-v4"
+    ]
+  },
+  "QualityChecker-EdgeCase5": {
+    "description": "Quality checker focusing on edgecase: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-edgecase-4o-t26-v5",
+      "check-verify-edgecase-4omini-t28-v5",
+      "check-edgecase-edgecase-4o-t30-v5",
+      "check-boundary-edgecase-4o-t27-v5",
+      "check-assert-edgecase-4o-t29-v5"
+    ]
+  },
+  "QualityChecker-Robustness6": {
+    "description": "Quality checker focusing on robustness: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-robustness-4o-t27-v6",
+      "check-verify-robustness-4omini-t30-v6",
+      "check-edgecase-robustness-4o-t32-v6",
+      "check-boundary-robustness-4o-t28-v6",
+      "check-assert-robustness-4o-t31-v6"
+    ]
+  },
+  "QualityChecker-TypeCheck7": {
+    "description": "Quality checker focusing on typecheck: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-typecheck-4o-t30-v7",
+      "check-verify-typecheck-4omini-t32-v7",
+      "check-edgecase-typecheck-4o-t34-v7",
+      "check-boundary-typecheck-4o-t31-v7",
+      "check-assert-typecheck-4o-t33-v7"
+    ]
+  },
+  "QualityChecker-BoundCheck8": {
+    "description": "Quality checker focusing on boundcheck: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-boundcheck-4o-t27-v8",
+      "check-verify-boundcheck-4omini-t30-v8",
+      "check-edgecase-boundcheck-4o-t32-v8",
+      "check-boundary-boundcheck-4o-t28-v8",
+      "check-assert-boundcheck-4o-t31-v8"
+    ]
+  },
+  "QualityChecker-ErrorHandle9": {
+    "description": "Quality checker focusing on errorhandle: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-errorhandle-4o-t30-v9",
+      "check-verify-errorhandle-4omini-t32-v9",
+      "check-edgecase-errorhandle-4o-t34-v9",
+      "check-boundary-errorhandle-4o-t31-v9",
+      "check-assert-errorhandle-4o-t33-v9"
+    ]
+  },
+  "QualityChecker-EdgeCase10": {
+    "description": "Quality checker focusing on edgecase: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-edgecase-4o-t26-v10",
+      "check-verify-edgecase-4omini-t28-v10",
+      "check-edgecase-edgecase-4o-t30-v10",
+      "check-boundary-edgecase-4o-t27-v10",
+      "check-assert-edgecase-4o-t29-v10"
+    ]
+  },
+  "QualityChecker-Robustness11": {
+    "description": "Quality checker focusing on robustness: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-robustness-4o-t27-v11",
+      "check-verify-robustness-4omini-t30-v11",
+      "check-edgecase-robustness-4o-t32-v11",
+      "check-boundary-robustness-4o-t28-v11",
+      "check-assert-robustness-4o-t31-v11"
+    ]
+  },
+  "QualityChecker-TypeCheck12": {
+    "description": "Quality checker focusing on typecheck: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-typecheck-4o-t30-v12",
+      "check-verify-typecheck-4omini-t32-v12",
+      "check-edgecase-typecheck-4o-t34-v12",
+      "check-boundary-typecheck-4o-t31-v12",
+      "check-assert-typecheck-4o-t33-v12"
+    ]
+  },
+  "QualityChecker-BoundCheck13": {
+    "description": "Quality checker focusing on boundcheck: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-boundcheck-4o-t27-v13",
+      "check-verify-boundcheck-4omini-t30-v13",
+      "check-edgecase-boundcheck-4o-t32-v13",
+      "check-boundary-boundcheck-4o-t28-v13",
+      "check-assert-boundcheck-4o-t31-v13"
+    ]
+  },
+  "QualityChecker-ErrorHandle14": {
+    "description": "Quality checker focusing on errorhandle: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-errorhandle-4o-t30-v14",
+      "check-verify-errorhandle-4omini-t32-v14",
+      "check-edgecase-errorhandle-4o-t34-v14",
+      "check-boundary-errorhandle-4o-t31-v14",
+      "check-assert-errorhandle-4o-t33-v14"
+    ]
+  },
+  "QualityChecker-EdgeCase15": {
+    "description": "Quality checker focusing on edgecase: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-edgecase-4o-t26-v15",
+      "check-verify-edgecase-4omini-t28-v15",
+      "check-edgecase-edgecase-4o-t30-v15",
+      "check-boundary-edgecase-4o-t27-v15",
+      "check-assert-edgecase-4o-t29-v15"
+    ]
+  },
+  "QualityChecker-Robustness16": {
+    "description": "Quality checker focusing on robustness: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-robustness-4o-t27-v16",
+      "check-verify-robustness-4omini-t30-v16",
+      "check-edgecase-robustness-4o-t32-v16",
+      "check-boundary-robustness-4o-t28-v16",
+      "check-assert-robustness-4o-t31-v16"
+    ]
+  },
+  "QualityChecker-TypeCheck17": {
+    "description": "Quality checker focusing on typecheck: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-typecheck-4o-t30-v17",
+      "check-verify-typecheck-4omini-t32-v17",
+      "check-edgecase-typecheck-4o-t34-v17",
+      "check-boundary-typecheck-4o-t31-v17",
+      "check-assert-typecheck-4o-t33-v17"
+    ]
+  },
+  "QualityChecker-BoundCheck18": {
+    "description": "Quality checker focusing on boundcheck: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-boundcheck-4o-t27-v18",
+      "check-verify-boundcheck-4omini-t30-v18",
+      "check-edgecase-boundcheck-4o-t32-v18",
+      "check-boundary-boundcheck-4o-t28-v18",
+      "check-assert-boundcheck-4o-t31-v18"
+    ]
+  },
+  "QualityChecker-ErrorHandle19": {
+    "description": "Quality checker focusing on errorhandle: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-errorhandle-4o-t30-v19",
+      "check-verify-errorhandle-4omini-t32-v19",
+      "check-edgecase-errorhandle-4o-t34-v19",
+      "check-boundary-errorhandle-4o-t31-v19",
+      "check-assert-errorhandle-4o-t33-v19"
+    ]
+  },
+  "QualityChecker-EdgeCase20": {
+    "description": "Quality checker focusing on edgecase: validation, verification, edge cases",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "code-testing"
+    ],
+    "tools": [
+      "check-validate-edgecase-4o-t26-v20",
+      "check-verify-edgecase-4omini-t28-v20",
+      "check-edgecase-edgecase-4o-t30-v20",
+      "check-boundary-edgecase-4o-t27-v20",
+      "check-assert-edgecase-4o-t29-v20"
+    ]
+  },
+  "ArchitectPlanner-AlgoDesign1": {
+    "description": "Architecture planner for algodesign: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-algodesign-4o-t65-v1",
+      "plan-structure-algodesign-4o-t67-v1",
+      "plan-organize-algodesign-4omini-t63-v1",
+      "plan-blueprint-algodesign-4o-t70-v1",
+      "plan-layout-algodesign-4o-t68-v1"
+    ]
+  },
+  "ArchitectPlanner-DataFlow2": {
+    "description": "Architecture planner for dataflow: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-dataflow-4o-t70-v2",
+      "plan-structure-dataflow-4o-t72-v2",
+      "plan-organize-dataflow-4omini-t68-v2",
+      "plan-blueprint-dataflow-4o-t75-v2",
+      "plan-layout-dataflow-4o-t73-v2"
+    ]
+  },
+  "ArchitectPlanner-DependMgmt3": {
+    "description": "Architecture planner for dependmgmt: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-dependmgmt-4o-t66-v3",
+      "plan-structure-dependmgmt-4o-t68-v3",
+      "plan-organize-dependmgmt-4omini-t64-v3",
+      "plan-blueprint-dependmgmt-4o-t71-v3",
+      "plan-layout-dependmgmt-4o-t69-v3"
+    ]
+  },
+  "ArchitectPlanner-InterfaceDesign4": {
+    "description": "Architecture planner for interfacedesign: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-interfacedesign-4o-t72-v4",
+      "plan-structure-interfacedesign-4o-t74-v4",
+      "plan-organize-interfacedesign-4omini-t70-v4",
+      "plan-blueprint-interfacedesign-4o-t77-v4",
+      "plan-layout-interfacedesign-4o-t75-v4"
+    ]
+  },
+  "ArchitectPlanner-ModuleArch5": {
+    "description": "Architecture planner for modulearch: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-modulearch-4o-t68-v5",
+      "plan-structure-modulearch-4o-t70-v5",
+      "plan-organize-modulearch-4omini-t66-v5",
+      "plan-blueprint-modulearch-4o-t73-v5",
+      "plan-layout-modulearch-4o-t71-v5"
+    ]
+  },
+  "ArchitectPlanner-AlgoDesign6": {
+    "description": "Architecture planner for algodesign: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-algodesign-4o-t65-v6",
+      "plan-structure-algodesign-4o-t67-v6",
+      "plan-organize-algodesign-4omini-t63-v6",
+      "plan-blueprint-algodesign-4o-t70-v6",
+      "plan-layout-algodesign-4o-t68-v6"
+    ]
+  },
+  "ArchitectPlanner-DataFlow7": {
+    "description": "Architecture planner for dataflow: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-dataflow-4o-t70-v7",
+      "plan-structure-dataflow-4o-t72-v7",
+      "plan-organize-dataflow-4omini-t68-v7",
+      "plan-blueprint-dataflow-4o-t75-v7",
+      "plan-layout-dataflow-4o-t73-v7"
+    ]
+  },
+  "ArchitectPlanner-DependMgmt8": {
+    "description": "Architecture planner for dependmgmt: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-dependmgmt-4o-t66-v8",
+      "plan-structure-dependmgmt-4o-t68-v8",
+      "plan-organize-dependmgmt-4omini-t64-v8",
+      "plan-blueprint-dependmgmt-4o-t71-v8",
+      "plan-layout-dependmgmt-4o-t69-v8"
+    ]
+  },
+  "ArchitectPlanner-InterfaceDesign9": {
+    "description": "Architecture planner for interfacedesign: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-interfacedesign-4o-t72-v9",
+      "plan-structure-interfacedesign-4o-t74-v9",
+      "plan-organize-interfacedesign-4omini-t70-v9",
+      "plan-blueprint-interfacedesign-4o-t77-v9",
+      "plan-layout-interfacedesign-4o-t75-v9"
+    ]
+  },
+  "ArchitectPlanner-ModuleArch10": {
+    "description": "Architecture planner for modulearch: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-modulearch-4o-t68-v10",
+      "plan-structure-modulearch-4o-t70-v10",
+      "plan-organize-modulearch-4omini-t66-v10",
+      "plan-blueprint-modulearch-4o-t73-v10",
+      "plan-layout-modulearch-4o-t71-v10"
+    ]
+  },
+  "ArchitectPlanner-AlgoDesign11": {
+    "description": "Architecture planner for algodesign: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-algodesign-4o-t65-v11",
+      "plan-structure-algodesign-4o-t67-v11",
+      "plan-organize-algodesign-4omini-t63-v11",
+      "plan-blueprint-algodesign-4o-t70-v11",
+      "plan-layout-algodesign-4o-t68-v11"
+    ]
+  },
+  "ArchitectPlanner-DataFlow12": {
+    "description": "Architecture planner for dataflow: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-dataflow-4o-t70-v12",
+      "plan-structure-dataflow-4o-t72-v12",
+      "plan-organize-dataflow-4omini-t68-v12",
+      "plan-blueprint-dataflow-4o-t75-v12",
+      "plan-layout-dataflow-4o-t73-v12"
+    ]
+  },
+  "ArchitectPlanner-DependMgmt13": {
+    "description": "Architecture planner for dependmgmt: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-dependmgmt-4o-t66-v13",
+      "plan-structure-dependmgmt-4o-t68-v13",
+      "plan-organize-dependmgmt-4omini-t64-v13",
+      "plan-blueprint-dependmgmt-4o-t71-v13",
+      "plan-layout-dependmgmt-4o-t69-v13"
+    ]
+  },
+  "ArchitectPlanner-InterfaceDesign14": {
+    "description": "Architecture planner for interfacedesign: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-interfacedesign-4o-t72-v14",
+      "plan-structure-interfacedesign-4o-t74-v14",
+      "plan-organize-interfacedesign-4omini-t70-v14",
+      "plan-blueprint-interfacedesign-4o-t77-v14",
+      "plan-layout-interfacedesign-4o-t75-v14"
+    ]
+  },
+  "ArchitectPlanner-ModuleArch15": {
+    "description": "Architecture planner for modulearch: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-modulearch-4o-t68-v15",
+      "plan-structure-modulearch-4o-t70-v15",
+      "plan-organize-modulearch-4omini-t66-v15",
+      "plan-blueprint-modulearch-4o-t73-v15",
+      "plan-layout-modulearch-4o-t71-v15"
+    ]
+  },
+  "ArchitectPlanner-AlgoDesign16": {
+    "description": "Architecture planner for algodesign: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-algodesign-4o-t65-v16",
+      "plan-structure-algodesign-4o-t67-v16",
+      "plan-organize-algodesign-4omini-t63-v16",
+      "plan-blueprint-algodesign-4o-t70-v16",
+      "plan-layout-algodesign-4o-t68-v16"
+    ]
+  },
+  "ArchitectPlanner-DataFlow17": {
+    "description": "Architecture planner for dataflow: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-dataflow-4o-t70-v17",
+      "plan-structure-dataflow-4o-t72-v17",
+      "plan-organize-dataflow-4omini-t68-v17",
+      "plan-blueprint-dataflow-4o-t75-v17",
+      "plan-layout-dataflow-4o-t73-v17"
+    ]
+  },
+  "ArchitectPlanner-DependMgmt18": {
+    "description": "Architecture planner for dependmgmt: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-dependmgmt-4o-t66-v18",
+      "plan-structure-dependmgmt-4o-t68-v18",
+      "plan-organize-dependmgmt-4omini-t64-v18",
+      "plan-blueprint-dependmgmt-4o-t71-v18",
+      "plan-layout-dependmgmt-4o-t69-v18"
+    ]
+  },
+  "ArchitectPlanner-InterfaceDesign19": {
+    "description": "Architecture planner for interfacedesign: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-interfacedesign-4o-t72-v19",
+      "plan-structure-interfacedesign-4o-t74-v19",
+      "plan-organize-interfacedesign-4omini-t70-v19",
+      "plan-blueprint-interfacedesign-4o-t77-v19",
+      "plan-layout-interfacedesign-4o-t75-v19"
+    ]
+  },
+  "ArchitectPlanner-ModuleArch20": {
+    "description": "Architecture planner for modulearch: design, structure, organization",
+    "role_tags": [
+      "planner"
+    ],
+    "domain_tags": [
+      "code-planner"
+    ],
+    "tools": [
+      "plan-design-modulearch-4o-t68-v20",
+      "plan-structure-modulearch-4o-t70-v20",
+      "plan-organize-modulearch-4omini-t66-v20",
+      "plan-blueprint-modulearch-4o-t73-v20",
+      "plan-layout-modulearch-4o-t71-v20"
+    ]
+  },
+  "Researcher-RecursionStudy1": {
+    "description": "Research agent for recursionstudy: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-recursionstudy-4o-t73-v1",
+      "research-explore-recursionstudy-4omini-t83-v1",
+      "research-discover-recursionstudy-4o-t78-v1",
+      "research-pattern-recursionstudy-4o-t80-v1",
+      "research-insight-recursionstudy-4o-t81-v1"
+    ]
+  },
+  "Researcher-GraphTheory2": {
+    "description": "Research agent for graphtheory: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-graphtheory-4o-t75-v2",
+      "research-explore-graphtheory-4omini-t85-v2",
+      "research-discover-graphtheory-4o-t80-v2",
+      "research-pattern-graphtheory-4o-t82-v2",
+      "research-insight-graphtheory-4o-t83-v2"
+    ]
+  },
+  "Researcher-ComplexityAnalysis3": {
+    "description": "Research agent for complexityanalysis: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-complexityanalysis-4o-t71-v3",
+      "research-explore-complexityanalysis-4omini-t81-v3",
+      "research-discover-complexityanalysis-4o-t76-v3",
+      "research-pattern-complexityanalysis-4o-t78-v3",
+      "research-insight-complexityanalysis-4o-t79-v3"
+    ]
+  },
+  "Researcher-PatternResearch4": {
+    "description": "Research agent for patternresearch: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-patternresearch-4o-t76-v4",
+      "research-explore-patternresearch-4omini-t87-v4",
+      "research-discover-patternresearch-4o-t82-v4",
+      "research-pattern-patternresearch-4o-t84-v4",
+      "research-insight-patternresearch-4o-t85-v4"
+    ]
+  },
+  "Researcher-DPAnalysis5": {
+    "description": "Research agent for dpanalysis: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-dpanalysis-4o-t70-v5",
+      "research-explore-dpanalysis-4omini-t80-v5",
+      "research-discover-dpanalysis-4o-t75-v5",
+      "research-pattern-dpanalysis-4o-t77-v5",
+      "research-insight-dpanalysis-4o-t78-v5"
+    ]
+  },
+  "Researcher-RecursionStudy6": {
+    "description": "Research agent for recursionstudy: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-recursionstudy-4o-t73-v6",
+      "research-explore-recursionstudy-4omini-t83-v6",
+      "research-discover-recursionstudy-4o-t78-v6",
+      "research-pattern-recursionstudy-4o-t80-v6",
+      "research-insight-recursionstudy-4o-t81-v6"
+    ]
+  },
+  "Researcher-GraphTheory7": {
+    "description": "Research agent for graphtheory: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-graphtheory-4o-t75-v7",
+      "research-explore-graphtheory-4omini-t85-v7",
+      "research-discover-graphtheory-4o-t80-v7",
+      "research-pattern-graphtheory-4o-t82-v7",
+      "research-insight-graphtheory-4o-t83-v7"
+    ]
+  },
+  "Researcher-ComplexityAnalysis8": {
+    "description": "Research agent for complexityanalysis: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-complexityanalysis-4o-t71-v8",
+      "research-explore-complexityanalysis-4omini-t81-v8",
+      "research-discover-complexityanalysis-4o-t76-v8",
+      "research-pattern-complexityanalysis-4o-t78-v8",
+      "research-insight-complexityanalysis-4o-t79-v8"
+    ]
+  },
+  "Researcher-PatternResearch9": {
+    "description": "Research agent for patternresearch: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-patternresearch-4o-t76-v9",
+      "research-explore-patternresearch-4omini-t87-v9",
+      "research-discover-patternresearch-4o-t82-v9",
+      "research-pattern-patternresearch-4o-t84-v9",
+      "research-insight-patternresearch-4o-t85-v9"
+    ]
+  },
+  "Researcher-DPAnalysis10": {
+    "description": "Research agent for dpanalysis: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-dpanalysis-4o-t70-v10",
+      "research-explore-dpanalysis-4omini-t80-v10",
+      "research-discover-dpanalysis-4o-t75-v10",
+      "research-pattern-dpanalysis-4o-t77-v10",
+      "research-insight-dpanalysis-4o-t78-v10"
+    ]
+  },
+  "Researcher-RecursionStudy11": {
+    "description": "Research agent for recursionstudy: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-recursionstudy-4o-t73-v11",
+      "research-explore-recursionstudy-4omini-t83-v11",
+      "research-discover-recursionstudy-4o-t78-v11",
+      "research-pattern-recursionstudy-4o-t80-v11",
+      "research-insight-recursionstudy-4o-t81-v11"
+    ]
+  },
+  "Researcher-GraphTheory12": {
+    "description": "Research agent for graphtheory: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-graphtheory-4o-t75-v12",
+      "research-explore-graphtheory-4omini-t85-v12",
+      "research-discover-graphtheory-4o-t80-v12",
+      "research-pattern-graphtheory-4o-t82-v12",
+      "research-insight-graphtheory-4o-t83-v12"
+    ]
+  },
+  "Researcher-ComplexityAnalysis13": {
+    "description": "Research agent for complexityanalysis: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-complexityanalysis-4o-t71-v13",
+      "research-explore-complexityanalysis-4omini-t81-v13",
+      "research-discover-complexityanalysis-4o-t76-v13",
+      "research-pattern-complexityanalysis-4o-t78-v13",
+      "research-insight-complexityanalysis-4o-t79-v13"
+    ]
+  },
+  "Researcher-PatternResearch14": {
+    "description": "Research agent for patternresearch: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-patternresearch-4o-t76-v14",
+      "research-explore-patternresearch-4omini-t87-v14",
+      "research-discover-patternresearch-4o-t82-v14",
+      "research-pattern-patternresearch-4o-t84-v14",
+      "research-insight-patternresearch-4o-t85-v14"
+    ]
+  },
+  "Researcher-DPAnalysis15": {
+    "description": "Research agent for dpanalysis: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-dpanalysis-4o-t70-v15",
+      "research-explore-dpanalysis-4omini-t80-v15",
+      "research-discover-dpanalysis-4o-t75-v15",
+      "research-pattern-dpanalysis-4o-t77-v15",
+      "research-insight-dpanalysis-4o-t78-v15"
+    ]
+  },
+  "Researcher-RecursionStudy16": {
+    "description": "Research agent for recursionstudy: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-recursionstudy-4o-t73-v16",
+      "research-explore-recursionstudy-4omini-t83-v16",
+      "research-discover-recursionstudy-4o-t78-v16",
+      "research-pattern-recursionstudy-4o-t80-v16",
+      "research-insight-recursionstudy-4o-t81-v16"
+    ]
+  },
+  "Researcher-GraphTheory17": {
+    "description": "Research agent for graphtheory: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-graphtheory-4o-t75-v17",
+      "research-explore-graphtheory-4omini-t85-v17",
+      "research-discover-graphtheory-4o-t80-v17",
+      "research-pattern-graphtheory-4o-t82-v17",
+      "research-insight-graphtheory-4o-t83-v17"
+    ]
+  },
+  "Researcher-ComplexityAnalysis18": {
+    "description": "Research agent for complexityanalysis: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-complexityanalysis-4o-t71-v18",
+      "research-explore-complexityanalysis-4omini-t81-v18",
+      "research-discover-complexityanalysis-4o-t76-v18",
+      "research-pattern-complexityanalysis-4o-t78-v18",
+      "research-insight-complexityanalysis-4o-t79-v18"
+    ]
+  },
+  "Researcher-PatternResearch19": {
+    "description": "Research agent for patternresearch: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-patternresearch-4o-t76-v19",
+      "research-explore-patternresearch-4omini-t87-v19",
+      "research-discover-patternresearch-4o-t82-v19",
+      "research-pattern-patternresearch-4o-t84-v19",
+      "research-insight-patternresearch-4o-t85-v19"
+    ]
+  },
+  "Researcher-DPAnalysis20": {
+    "description": "Research agent for dpanalysis: analysis, exploration, pattern discovery",
+    "role_tags": [
+      "researcher"
+    ],
+    "domain_tags": [
+      "code-research"
+    ],
+    "tools": [
+      "research-analyze-dpanalysis-4o-t70-v20",
+      "research-explore-dpanalysis-4omini-t80-v20",
+      "research-discover-dpanalysis-4o-t75-v20",
+      "research-pattern-dpanalysis-4o-t77-v20",
+      "research-insight-dpanalysis-4o-t78-v20"
+    ]
+  }
+}

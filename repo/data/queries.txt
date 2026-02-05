@@ -1,0 +1,80 @@
+Code Generation: Write a Python script that parses a CSV and outputs a summary table.
+Code Generation: Create a REST API endpoint in FastAPI for a todo list.
+Code Generation: Generate a CLI tool in Python for batch renaming files.
+Code Generation: Produce a Pygame starter project with a moving sprite and controls.
+Code Generation: Write SQL schema and CRUD functions for a simple blog.
+Code Generation: Generate a data ingestion pipeline with logging and retries.
+Code Generation: Create a script that downloads URLs from a list and saves HTML.
+Code Generation: Build a markdown-to-HTML converter in Python.
+Code Generation: Implement a simple queue worker with exponential backoff.
+Code Generation: Create a Python module for reading/writing JSON with validation.
+Code Refactoring: Refactor a long function into smaller helpers with clear names.
+Code Refactoring: Convert nested loops into list comprehensions where safe.
+Code Refactoring: Replace string formatting with f-strings and clean variable names.
+Code Refactoring: Extract duplicate logic into a reusable utility function.
+Code Refactoring: Optimize a slow pandas pipeline for readability and speed.
+Code Refactoring: Restructure a class to reduce side effects and improve cohesion.
+Code Refactoring: Replace magic numbers with named constants and enums.
+Code Refactoring: Simplify conditional branches by using early returns.
+Code Refactoring: Migrate a script to use argparse for CLI options.
+Code Refactoring: Split a large module into packages with clear responsibilities.
+Code Testing: Write unit tests for a calculator module with edge cases.
+Code Testing: Create integration tests for a FastAPI endpoint.
+Code Testing: Add property-based tests for a sorting function.
+Code Testing: Design test cases for a file parser with malformed inputs.
+Code Testing: Build a test plan for a data pipeline with retries and failures.
+Code Testing: Write tests for a regex-based email validator.
+Code Testing: Add mocks to test external API calls without network.
+Code Testing: Create a performance test for a search function.
+Code Testing: Add regression tests after a bug fix in date handling.
+Code Testing: Validate serialization/deserialization for a JSON schema.
+Mathematics & Scientific Calc: Compute numerical integration of a function.
+Mathematics & Scientific Calc: Solve a system of linear equations and report stability.
+Mathematics & Scientific Calc: Estimate eigenvalues of a matrix and interpret results.
+Mathematics & Scientific Calc: Fit a polynomial to data using least squares.
+Mathematics & Scientific Calc: Simulate a differential equation with Euler method.
+Mathematics & Scientific Calc: Compute Fourier transform of a sampled signal.
+Mathematics & Scientific Calc: Calculate confidence intervals for a mean.
+Mathematics & Scientific Calc: Perform Monte Carlo estimation of pi.
+Mathematics & Scientific Calc: Analyze time series seasonality and trend.
+Mathematics & Scientific Calc: Compute correlation and covariance matrices.
+Math & Problem Solving: Find the shortest path in a weighted graph.
+Math & Problem Solving: Solve a constraint satisfaction puzzle efficiently.
+Math & Problem Solving: Design an algorithm to schedule tasks with deadlines.
+Math & Problem Solving: Optimize a knapsack problem with dynamic programming.
+Math & Problem Solving: Determine if a number is prime with efficient checks.
+Math & Problem Solving: Solve a Sudoku using backtracking and heuristics.
+Math & Problem Solving: Estimate big-O of an algorithm based on loops.
+Math & Problem Solving: Compute the minimum number of coins for change.
+Math & Problem Solving: Prove or disprove a simple combinatorics statement.
+Math & Problem Solving: Derive a formula for the sum of an arithmetic series.
+Commonsense & QA: Explain why a glass of ice water sweats on a hot day.
+Commonsense & QA: Why does metal feel colder than wood at the same temperature?
+Commonsense & QA: Determine the most likely cause of a plant¡¯s wilting.
+Commonsense & QA: Answer whether a heavier object falls faster than a lighter one.
+Commonsense & QA: Evaluate a scenario about safety in a storm.
+Commonsense & QA: Pick the most plausible next step in a simple story.
+Commonsense & QA: Clarify ambiguous user request by asking concise questions.
+Commonsense & QA: Explain a simple cause-and-effect in daily life.
+Commonsense & QA: Provide a quick sanity check for a claim.
+Commonsense & QA: Give a plain-language explanation of a common misconception.
+Knowledge & Reasoning: Summarize key facts about a topic from given notes.
+Knowledge & Reasoning: Compare two approaches and argue which is better.
+Knowledge & Reasoning: Identify assumptions in an argument and evaluate them.
+Knowledge & Reasoning: Infer missing steps in a multi-step explanation.
+Knowledge & Reasoning: Build a causal chain from events to outcomes.
+Knowledge & Reasoning: Extract entities and relations from a paragraph.
+Knowledge & Reasoning: Verify internal consistency of a report.
+Knowledge & Reasoning: Generate hypotheses and propose how to test them.
+Knowledge & Reasoning: Contrast pros/cons of two design choices.
+Knowledge & Reasoning: Create a structured summary with key takeaways.
+Planning & Task Decomposition: Break a software feature into milestones.
+Planning & Task Decomposition: Create a week-long study plan for a topic.
+Planning & Task Decomposition: Outline steps to migrate a database safely.
+Planning & Task Decomposition: Plan a data cleaning project with dependencies.
+Planning & Task Decomposition: Decompose a research task into subtasks.
+Planning & Task Decomposition: Build a roadmap for an MVP release.
+Planning & Task Decomposition: Sequence tasks for deploying a web app.
+Planning & Task Decomposition: Create a checklist for a code release.
+Planning & Task Decomposition: Plan a testing strategy with phases.
+Planning & Task Decomposition: Organize a complex task into parallel workstreams.
