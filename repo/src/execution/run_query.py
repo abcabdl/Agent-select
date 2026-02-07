@@ -112,8 +112,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max_steps", type=int, default=6)
     parser.add_argument("--allow_unknown_roles", action="store_true")
     parser.add_argument("--no_reuse_role_selection", action="store_true")
+    parser.add_argument(
+        "--reuse_same_role_agent_once",
+        action="store_true",
+        help="within one query, search/select each role once and reuse the same agent for repeated role steps",
+    )
     parser.add_argument("--print_topology", action="store_true")
     parser.add_argument("--soft_connection", action="store_true")
+    parser.add_argument("--mcts_dynamic_optimization", action="store_true")
+    parser.add_argument("--mcts_iterations", type=int, default=64)
+    parser.add_argument("--mcts_rollout_depth", type=int, default=4)
+    parser.add_argument("--mcts_exploration", type=float, default=1.414)
+    parser.add_argument("--mcts_discount", type=float, default=0.95)
+    parser.add_argument("--mcts_max_candidates", type=int, default=8)
     parser.add_argument("--meta_router_model", type=str, default=None)
     parser.add_argument("--meta_router_base_url", type=str, default=None)
     parser.add_argument("--meta_router_api_key", type=str, default=None)
@@ -275,7 +286,14 @@ def main() -> None:
             max_steps=args.max_steps,
             allow_unknown_roles=args.allow_unknown_roles,
             reuse_role_selection=not args.no_reuse_role_selection,
+            reuse_same_role_agent_once=args.reuse_same_role_agent_once,
             soft_connection=args.soft_connection,
+            mcts_dynamic_optimization=args.mcts_dynamic_optimization,
+            mcts_iterations=args.mcts_iterations,
+            mcts_rollout_depth=args.mcts_rollout_depth,
+            mcts_exploration=args.mcts_exploration,
+            mcts_discount=args.mcts_discount,
+            mcts_max_candidates=args.mcts_max_candidates,
         )
 
     print(result.get("answer"))

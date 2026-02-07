@@ -631,6 +631,7 @@ def _auto_generate_solutions_orchestrator(
     max_steps: int,
     allow_unknown_roles: bool,
     reuse_role_selection: bool,
+    reuse_same_role_agent_once: bool,
     local_model_dir: str,
     local_lora_dir: Optional[str],
     local_device: Optional[str],
@@ -659,6 +660,12 @@ def _auto_generate_solutions_orchestrator(
     include_tool_trace: bool,
     tool_only: bool,
     tool_timeout_s: float,
+    mcts_dynamic_optimization: bool,
+    mcts_iterations: int,
+    mcts_rollout_depth: int,
+    mcts_exploration: float,
+    mcts_discount: float,
+    mcts_max_candidates: int,
     force_role: Optional[str] = None,
     strict_roles: bool = True,
 ) -> Tuple[Dict[str, str], Dict[str, Dict[str, Any]]]:
@@ -792,8 +799,15 @@ def _auto_generate_solutions_orchestrator(
                 max_steps=max_steps,
                 allow_unknown_roles=allow_unknown_roles,
                 reuse_role_selection=reuse_role_selection,
+                reuse_same_role_agent_once=reuse_same_role_agent_once,
                 tool_only=tool_only,
                 tool_timeout_s=tool_timeout_s,
+                mcts_dynamic_optimization=mcts_dynamic_optimization,
+                mcts_iterations=mcts_iterations,
+                mcts_rollout_depth=mcts_rollout_depth,
+                mcts_exploration=mcts_exploration,
+                mcts_discount=mcts_discount,
+                mcts_max_candidates=mcts_max_candidates,
                 force_role=force_role,
                 strict_roles=strict_roles,
             )
@@ -1027,6 +1041,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include_tool_trace", action="store_true")
     parser.add_argument("--tool_only", action="store_true", help="use tools only; no LLM generation")
     parser.add_argument("--tool_timeout", type=float, default=5.0, help="tool execution timeout seconds")
+    parser.add_argument("--mcts_dynamic_optimization", action="store_true")
+    parser.add_argument("--mcts_iterations", type=int, default=64)
+    parser.add_argument("--mcts_rollout_depth", type=int, default=4)
+    parser.add_argument("--mcts_exploration", type=float, default=1.414)
+    parser.add_argument("--mcts_discount", type=float, default=0.95)
+    parser.add_argument("--mcts_max_candidates", type=int, default=8)
     parser.add_argument("--roles", default="code-generation,code-planner,code-testing,code-refactoring", type=str)
     parser.add_argument("--constraints", default="", type=str, help="JSON string per role")
     parser.add_argument("--workflow_version", default="v1", type=str)
@@ -1045,6 +1065,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max_steps", default=6, type=int)
     parser.add_argument("--allow_unknown_roles", action="store_true")
     parser.add_argument("--no_reuse_role_selection", action="store_true")
+    parser.add_argument(
+        "--reuse_same_role_agent_once",
+        action="store_true",
+        help="within one query, search/select each role once and reuse the same agent for repeated role steps",
+    )
     parser.add_argument("--force_role", default="", type=str, help="force all queries to use this role (skip Router)")
     return parser.parse_args()
 
@@ -1109,6 +1134,7 @@ def main() -> None:
                     max_steps=args.max_steps,
                     allow_unknown_roles=args.allow_unknown_roles,
                     reuse_role_selection=not args.no_reuse_role_selection,
+                    reuse_same_role_agent_once=args.reuse_same_role_agent_once,
                     local_model_dir=args.local_model_dir,
                     local_lora_dir=args.local_lora_dir,
                     local_device=args.local_device,
@@ -1137,6 +1163,12 @@ def main() -> None:
                     include_tool_trace=args.include_tool_trace,
                     tool_only=args.tool_only,
                     tool_timeout_s=args.tool_timeout,
+                    mcts_dynamic_optimization=args.mcts_dynamic_optimization,
+                    mcts_iterations=args.mcts_iterations,
+                    mcts_rollout_depth=args.mcts_rollout_depth,
+                    mcts_exploration=args.mcts_exploration,
+                    mcts_discount=args.mcts_discount,
+                    mcts_max_candidates=args.mcts_max_candidates,
                     force_role=args.force_role or None,
                 )
             else:

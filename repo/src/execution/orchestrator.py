@@ -4,6 +4,9 @@ import json
 import os
 import re
 import sys
+import math
+import hashlib
+import sqlite3
 import subprocess
 import tempfile
 import textwrap
@@ -376,6 +379,20 @@ def _format_router_candidates(candidates: List[dict]) -> str:
     for cand in candidates:
         agent_name = cand.get('name', '')
         name_interpretation = _interpret_agent_name(agent_name)
+        role_score = cand.get("role_score")
+        team_score = cand.get("team_score")
+        cost_penalty = cand.get("cost_penalty")
+        latency_penalty = cand.get("latency_penalty")
+
+        score_lines: List[str] = []
+        if role_score is not None:
+            score_lines.append(f"  role_score: {float(role_score):.4f}")
+        if team_score is not None:
+            score_lines.append(f"  team_score: {float(team_score):.4f}")
+        if cost_penalty is not None:
+            score_lines.append(f"  cost_penalty: {float(cost_penalty):.4f}")
+        if latency_penalty is not None:
+            score_lines.append(f"  latency_penalty: {float(latency_penalty):.4f}")
         parts.append(
             "\n".join(
                 [
@@ -386,6 +403,7 @@ def _format_router_candidates(candidates: List[dict]) -> str:
                     f"  role_tags: {cand.get('role_tags')}",
                     f"  tool_tags: {cand.get('tool_tags')}",
                     f"  description: {cand.get('description')}",
+                    *score_lines,
                 ]
             )
         )
@@ -460,6 +478,10 @@ def _select_with_router_llm(
                 "domain_tags": card.domain_tags,
                 "role_tags": card.role_tags,
                 "tool_tags": card.tool_tags,
+                "role_score": cand.get("role_score", cand.get("score")),
+                "team_score": cand.get("team_score"),
+                "cost_penalty": cand.get("cost_penalty"),
+                "latency_penalty": cand.get("latency_penalty"),
             }
         )
     if not candidate_cards:
@@ -570,6 +592,653 @@ def _ensure_role_constraints(constraints: Optional[Dict[str, Any]], role: str) -
         if tags:
             merged["role_tags"] = tags
     return merged
+
+
+def _build_selection_cache_key(*, role: str, task_text: str, step_idx: int, topology: str) -> str:
+    digest = hashlib.sha256((task_text or "").encode("utf-8")).hexdigest()[:12]
+    topo = (topology or "unknown").strip().lower()
+    return f"{topo}|{role}|s{step_idx}|q{digest}"
+
+
+def _jaccard_overlap(a: List[str], b: List[str]) -> float:
+    set_a = {str(item).strip().lower() for item in (a or []) if str(item).strip()}
+    set_b = {str(item).strip().lower() for item in (b or []) if str(item).strip()}
+    if not set_a and not set_b:
+        return 0.0
+    union = set_a.union(set_b)
+    if not union:
+        return 0.0
+    return float(len(set_a.intersection(set_b)) / len(union))
+
+
+def _tier_penalty(value: Optional[str]) -> float:
+    if not value:
+        return 0.25
+    normalized = str(value).strip().lower()
+    if normalized in {"low", "cheap", "economy", "fast"}:
+        return 0.0
+    if normalized in {"medium", "mid", "normal", "balanced"}:
+        return 0.5
+    if normalized in {"high", "expensive", "slow", "premium"}:
+        return 1.0
+    return 0.25
+
+
+_ROLE_ALIAS = {
+    "code-generation": "builder",
+    "code-planner": "planner",
+    "code-testing": "checker",
+    "code-refactoring": "refactor",
+    "tester": "checker",
+    "refractor": "refactor",
+}
+
+_ROLE_PAIR_WEIGHTS = {
+    ("researcher", "planner"): 1.15,
+    ("researcher", "builder"): 1.10,
+    ("planner", "builder"): 1.25,
+    ("planner", "checker"): 1.05,
+    ("builder", "checker"): 1.35,
+    ("checker", "builder"): 1.10,
+}
+
+
+def _normalize_role_name(role: Optional[str]) -> str:
+    key = str(role or "").strip().lower()
+    if not key:
+        return ""
+    return _ROLE_ALIAS.get(key, key)
+
+
+def _role_pair_weight(prev_role: Optional[str], curr_role: Optional[str]) -> float:
+    prev = _normalize_role_name(prev_role)
+    curr = _normalize_role_name(curr_role)
+    if not prev or not curr:
+        return 1.0
+    if prev == curr:
+        return 0.8
+    return float(_ROLE_PAIR_WEIGHTS.get((prev, curr), 1.0))
+
+
+def _safe_mean(values: List[float], default: float = 0.0) -> float:
+    if not values:
+        return float(default)
+    return float(sum(values) / float(len(values)))
+
+
+def _io_chain_score(prev_card: Any, curr_card: Any) -> float:
+    if prev_card is None or curr_card is None:
+        return 0.0
+
+    format_overlap = _jaccard_overlap(
+        list(getattr(prev_card, "output_formats", []) or []),
+        list(getattr(curr_card, "output_formats", []) or []),
+    )
+    modality_overlap = _jaccard_overlap(
+        list(getattr(prev_card, "modalities", []) or []),
+        list(getattr(curr_card, "modalities", []) or []),
+    )
+    tool_overlap = _jaccard_overlap(
+        list(getattr(prev_card, "tool_tags", []) or []),
+        list(getattr(curr_card, "tool_tags", []) or []),
+    )
+
+    io_match = (0.5 * format_overlap) + (0.3 * modality_overlap) + (0.2 * tool_overlap)
+    conversion_penalty = 1.0 - format_overlap
+
+    prev_tool_tags = {str(tag).strip().lower() for tag in (getattr(prev_card, "tool_tags", []) or []) if str(tag).strip()}
+    curr_tool_tags = {str(tag).strip().lower() for tag in (getattr(curr_card, "tool_tags", []) or []) if str(tag).strip()}
+    cleaner_tokens = ("clean", "normalize", "format", "parse", "sanitize")
+    prev_is_cleaner = any(any(token in tag for token in cleaner_tokens) for tag in prev_tool_tags)
+    curr_is_cleaner = any(any(token in tag for token in cleaner_tokens) for tag in curr_tool_tags)
+    repeated_clean_penalty = 0.2 if (prev_is_cleaner and curr_is_cleaner) else 0.0
+
+    score = io_match - (0.3 * conversion_penalty) - repeated_clean_penalty
+    return float(max(-1.0, min(1.0, score)))
+
+
+def _ensure_pair_bandit_schema(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pair_bandits (
+            workflow_version TEXT NOT NULL,
+            prev_role TEXT NOT NULL,
+            prev_card_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            card_id TEXT NOT NULL,
+            alpha REAL NOT NULL,
+            beta REAL NOT NULL,
+            PRIMARY KEY (workflow_version, prev_role, prev_card_id, role, card_id)
+        )
+        """
+    )
+    conn.commit()
+
+
+def _pair_success_key(
+    prev_role: Optional[str],
+    prev_card_id: Optional[str],
+    role: Optional[str],
+    card_id: Optional[str],
+) -> Tuple[str, str, str, str]:
+    return (
+        _normalize_role_name(prev_role),
+        str(prev_card_id or "").strip(),
+        _normalize_role_name(role),
+        str(card_id or "").strip(),
+    )
+
+
+def _load_pair_success_priors(
+    db_path: Optional[str],
+    workflow_version: str,
+) -> Dict[Tuple[str, str, str, str], float]:
+    priors: Dict[Tuple[str, str, str, str], float] = {}
+    if not db_path or not os.path.exists(db_path):
+        return priors
+    conn = sqlite3.connect(db_path)
+    try:
+        _ensure_pair_bandit_schema(conn)
+        cursor = conn.execute(
+            """
+            SELECT prev_role, prev_card_id, role, card_id, alpha, beta
+            FROM pair_bandits
+            WHERE workflow_version = ?
+            """,
+            (workflow_version,),
+        )
+        for row in cursor.fetchall():
+            key = _pair_success_key(row[0], row[1], row[2], row[3])
+            alpha = float(row[4] or 1.0)
+            beta = float(row[5] or 1.0)
+            denom = alpha + beta
+            priors[key] = float(alpha / denom) if denom > 0 else 0.5
+    except Exception:
+        return {}
+    finally:
+        conn.close()
+    return priors
+
+
+def _pair_success_rate(
+    priors: Optional[Dict[Tuple[str, str, str, str], float]],
+    *,
+    prev_role: Optional[str],
+    prev_card_id: Optional[str],
+    role: Optional[str],
+    card_id: Optional[str],
+) -> float:
+    if not priors:
+        return 0.5
+    key = _pair_success_key(prev_role, prev_card_id, role, card_id)
+    return float(priors.get(key, 0.5))
+
+
+def _update_pair_success_stats(
+    db_path: Optional[str],
+    *,
+    workflow_version: str,
+    selections: List[Dict[str, Any]],
+    reward: float,
+    confidence: float = 1.0,
+) -> None:
+    if not db_path or not selections:
+        return
+
+    reward = max(0.0, min(1.0, float(reward)))
+    confidence = max(0.0, min(1.0, float(confidence)))
+    if confidence <= 0.0:
+        return
+
+    conn = sqlite3.connect(db_path)
+    try:
+        _ensure_pair_bandit_schema(conn)
+        for idx in range(1, len(selections)):
+            prev = selections[idx - 1] or {}
+            curr = selections[idx] or {}
+
+            prev_role = _normalize_role_name(prev.get("role"))
+            prev_card_id = str(prev.get("selected_main") or "").strip()
+            role = _normalize_role_name(curr.get("role"))
+            card_id = str(curr.get("selected_main") or "").strip()
+            if not prev_role or not prev_card_id or not role or not card_id:
+                continue
+
+            cursor = conn.execute(
+                """
+                SELECT alpha, beta FROM pair_bandits
+                WHERE workflow_version = ? AND prev_role = ? AND prev_card_id = ? AND role = ? AND card_id = ?
+                """,
+                (workflow_version, prev_role, prev_card_id, role, card_id),
+            )
+            row = cursor.fetchone()
+            alpha = float(row[0]) if row else 1.0
+            beta = float(row[1]) if row else 1.0
+            alpha += reward * confidence
+            beta += (1.0 - reward) * confidence
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO pair_bandits
+                (workflow_version, prev_role, prev_card_id, role, card_id, alpha, beta)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (workflow_version, prev_role, prev_card_id, role, card_id, alpha, beta),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _apply_team_level_scoring(
+    *,
+    candidates: List[Dict[str, Any]],
+    registry,
+    selected_agent_ids: List[str],
+    lambda_compat: float,
+    mu_cost: float,
+    nu_latency: float,
+) -> List[Dict[str, Any]]:
+    if not candidates:
+        return []
+    _ = lambda_compat  # kept for backward-compatible signature.
+    _ = selected_agent_ids  # keep signature stable; similarity-based team overlap is intentionally disabled.
+
+    scored: List[Dict[str, Any]] = []
+    for candidate in candidates:
+        enriched = dict(candidate)
+        card_id = candidate.get("card_id")
+        card = registry.get(card_id) if card_id else None
+
+        role_score = float(candidate.get("score", 0.0) or 0.0)
+        cost_penalty = _tier_penalty(getattr(card, "cost_tier", None)) if card is not None else 0.25
+        latency_penalty = _tier_penalty(getattr(card, "latency_tier", None)) if card is not None else 0.25
+        team_score = role_score - (mu_cost * cost_penalty) - (nu_latency * latency_penalty)
+
+        enriched["role_score"] = role_score
+        enriched["cost_penalty"] = cost_penalty
+        enriched["latency_penalty"] = latency_penalty
+        enriched["team_score"] = team_score
+        scored.append(enriched)
+
+    scored.sort(key=lambda item: float(item.get("team_score", item.get("score", 0.0)) or 0.0), reverse=True)
+    return scored
+
+
+def _unary_score(candidate: Dict[str, Any], card: Any, mu_cost: float, nu_latency: float) -> float:
+    base = float(candidate.get("score", 0.0) or 0.0)
+    cost_penalty = _tier_penalty(getattr(card, "cost_tier", None)) if card is not None else 0.25
+    latency_penalty = _tier_penalty(getattr(card, "latency_tier", None)) if card is not None else 0.25
+    return float(base - (mu_cost * cost_penalty) - (nu_latency * latency_penalty))
+
+
+def _prepare_role_candidates(
+    *,
+    task_text: str,
+    role: str,
+    constraints: Optional[Dict[str, Any]],
+    registry,
+    index,
+    embedder,
+    reranker: TfidfLinearReranker,
+    top_n: int,
+    top_k: int,
+    rerank_top_m: int,
+    mmr_lambda: float,
+    router_no_rerank: bool,
+    selected_agent_ids: Optional[List[str]],
+    team_lambda_compat: float,
+    team_mu_cost: float,
+    team_nu_latency: float,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    candidates = get_candidates(
+        task_text=task_text,
+        role=role,
+        constraints=constraints,
+        kind="agent",
+        top_n=top_n,
+        top_k=top_k,
+        mmr_lambda=mmr_lambda,
+        registry=registry,
+        index=index,
+        embedder=embedder,
+    )
+
+    if candidates:
+        if router_no_rerank:
+            reranked = list(candidates)
+        else:
+            candidate_texts = _build_candidate_texts(registry, candidates)
+            query_text = build_role_query(task_text, role, constraints)
+            rerank_indices, _ = reranker.rank(query_text, candidate_texts, top_m=min(rerank_top_m, len(candidates)))
+            reranked = [candidates[i] for i in rerank_indices]
+    else:
+        reranked = []
+
+    base_ranked = reranked if reranked else candidates
+    scored = _apply_team_level_scoring(
+        candidates=base_ranked,
+        registry=registry,
+        selected_agent_ids=list(selected_agent_ids or []),
+        lambda_compat=team_lambda_compat,
+        mu_cost=team_mu_cost,
+        nu_latency=team_nu_latency,
+    )
+    return candidates, (scored if scored else base_ranked)
+
+
+class _MCTSNode:
+    def __init__(
+        self,
+        *,
+        role: Optional[str],
+        depth: int,
+        selected_ids: Tuple[str, ...],
+        selected_roles: Tuple[str, ...],
+        parent: Optional["_MCTSNode"] = None,
+        action_card_id: Optional[str] = None,
+        action_reward: float = 0.0,
+    ) -> None:
+        self.role = role
+        self.depth = depth
+        self.selected_ids = selected_ids
+        self.selected_roles = selected_roles
+        self.parent = parent
+        self.action_card_id = action_card_id
+        self.action_reward = action_reward
+        self.children: Dict[str, _MCTSNode] = {}
+        self.untried_actions: List[str] = []
+        self.visits: int = 0
+        self.total_reward: float = 0.0
+
+    @property
+    def value(self) -> float:
+        if self.visits <= 0:
+            return 0.0
+        return self.total_reward / float(self.visits)
+
+
+def _select_agent_with_mcts_dynamic(
+    *,
+    task_text: str,
+    role: str,
+    step_idx: int,
+    config: TopologyConfig,
+    constraints_per_role: Dict[str, Dict[str, Any]],
+    selected_agent_ids: List[str],
+    selected_agent_roles: List[str],
+    registry,
+    index,
+    embedder,
+    reranker: TfidfLinearReranker,
+    top_n: int,
+    top_k: int,
+    rerank_top_m: int,
+    mmr_lambda: float,
+    router_no_rerank: bool,
+    team_lambda_compat: float,
+    team_mu_cost: float,
+    team_nu_latency: float,
+    mcts_iterations: int,
+    mcts_rollout_depth: int,
+    mcts_exploration: float,
+    mcts_discount: float,
+    mcts_max_candidates: int,
+    pair_success_priors: Optional[Dict[Tuple[str, str, str, str], float]],
+) -> Optional[Dict[str, Any]]:
+    available_roles = list(config.roles or [role])
+    if role not in available_roles:
+        available_roles.insert(0, role)
+
+    role_cache: Dict[str, List[Dict[str, Any]]] = {}
+    card_cache: Dict[str, Any] = {}
+    role_candidate_map: Dict[str, Dict[str, Dict[str, Any]]] = {}
+
+    def _get_candidates_for_role(target_role: str) -> List[Dict[str, Any]]:
+        if target_role in role_cache:
+            return role_cache[target_role]
+        role_constraints = _ensure_role_constraints(constraints_per_role.get(target_role), target_role)
+        _, ranked = _prepare_role_candidates(
+            task_text=task_text,
+            role=target_role,
+            constraints=role_constraints,
+            registry=registry,
+            index=index,
+            embedder=embedder,
+            reranker=reranker,
+            top_n=top_n,
+            top_k=top_k,
+            rerank_top_m=rerank_top_m,
+            mmr_lambda=mmr_lambda,
+            router_no_rerank=router_no_rerank,
+            selected_agent_ids=selected_agent_ids,
+            team_lambda_compat=team_lambda_compat,
+            team_mu_cost=team_mu_cost,
+            team_nu_latency=team_nu_latency,
+        )
+        limited = list(ranked[: max(1, mcts_max_candidates)])
+        role_cache[target_role] = limited
+        role_candidate_map[target_role] = {}
+        for item in limited:
+            cid = str(item.get("card_id") or "")
+            if not cid:
+                continue
+            role_candidate_map[target_role][cid] = item
+            if cid not in card_cache:
+                card_cache[cid] = registry.get(cid)
+        return limited
+
+    team_beta_bottleneck = max(0.0, 0.75 * float(team_lambda_compat))
+    team_eta_io = max(0.0, 0.5 * float(team_lambda_compat))
+    team_zeta_success = max(0.0, 0.8 * float(team_lambda_compat))
+
+    def _action_reward(
+        prev_ids: Tuple[str, ...],
+        prev_roles: Tuple[str, ...],
+        target_role: str,
+        card_id: str,
+    ) -> float:
+        cand = role_candidate_map.get(target_role, {}).get(card_id)
+        card = card_cache.get(card_id)
+        reward = _unary_score(cand or {"score": 0.0}, card, team_mu_cost, team_nu_latency)
+        if not prev_ids:
+            return float(reward)
+
+        success_weighted_sum = 0.0
+        success_weight_sum = 0.0
+        success_values: List[float] = []
+
+        for idx, prev_id in enumerate(prev_ids):
+            prev_card = card_cache.get(prev_id) or registry.get(prev_id)
+            if prev_card is not None and prev_id not in card_cache:
+                card_cache[prev_id] = prev_card
+            prev_role = prev_roles[idx] if idx < len(prev_roles) else ""
+            pair_weight = _role_pair_weight(prev_role, target_role)
+
+            success_rate = _pair_success_rate(
+                pair_success_priors,
+                prev_role=prev_role,
+                prev_card_id=prev_id,
+                role=target_role,
+                card_id=card_id,
+            )
+            success_weighted_sum += pair_weight * success_rate
+            success_weight_sum += pair_weight
+            success_values.append(success_rate)
+
+        mean_success = (success_weighted_sum / success_weight_sum) if success_weight_sum > 0 else 0.5
+        min_success = min(success_values) if success_values else 0.5
+        bottleneck_penalty = 1.0 - min_success
+
+        prev_last_id = prev_ids[-1]
+        prev_last_card = card_cache.get(prev_last_id) or registry.get(prev_last_id)
+        if prev_last_card is not None and prev_last_id not in card_cache:
+            card_cache[prev_last_id] = prev_last_card
+        io_chain = _io_chain_score(prev_last_card, card)
+
+        centered_success = mean_success - 0.5
+
+        reward -= float(team_beta_bottleneck) * bottleneck_penalty
+        reward += float(team_eta_io) * io_chain
+        reward += float(team_zeta_success) * centered_success
+        return float(reward)
+
+    def _predict_next_role(current_role: Optional[str], depth: int) -> Optional[str]:
+        if current_role is None:
+            return None
+        if depth >= max(1, mcts_rollout_depth):
+            return None
+        neighbors = _neighbors_for_role(current_role, config)
+        candidates = neighbors if neighbors else available_roles
+        if not candidates:
+            return None
+        avoid_role = current_role if len(candidates) > 1 else None
+        return _select_next_role(
+            task_text=task_text,
+            available_roles=candidates,
+            history=[],
+            llm=None,
+            avoid_role=avoid_role,
+        )
+
+    root_candidates = _get_candidates_for_role(role)
+    if not root_candidates:
+        return None
+
+    normalized_role_history = tuple(_normalize_role_name(item) for item in (selected_agent_roles or []))
+    root = _MCTSNode(
+        role=role,
+        depth=0,
+        selected_ids=tuple(selected_agent_ids),
+        selected_roles=normalized_role_history,
+    )
+    root.untried_actions = [str(item.get("card_id")) for item in root_candidates if item.get("card_id")]
+
+    iterations = max(1, int(mcts_iterations))
+    depth_limit = max(1, int(mcts_rollout_depth))
+    exploration = max(0.0, float(mcts_exploration))
+    discount = min(1.0, max(0.0, float(mcts_discount)))
+
+    def _is_terminal(node: _MCTSNode) -> bool:
+        return node.role is None or node.depth >= depth_limit
+
+    for _ in range(iterations):
+        node = root
+        path = [root]
+        total_reward = 0.0
+
+        while not _is_terminal(node) and not node.untried_actions and node.children:
+            best_child = None
+            best_ucb = None
+            parent_visits = max(1, node.visits)
+            for child in node.children.values():
+                if child.visits <= 0:
+                    ucb = float("inf")
+                else:
+                    exploit = child.value
+                    explore = exploration * ((2.0 * max(1e-9, float(math.log(parent_visits)))) / child.visits) ** 0.5
+                    ucb = exploit + explore
+                if best_ucb is None or ucb > best_ucb:
+                    best_ucb = ucb
+                    best_child = child
+            if best_child is None:
+                break
+            node = best_child
+            path.append(node)
+            total_reward += (discount ** max(0, node.depth - 1)) * node.action_reward
+
+        if not _is_terminal(node) and node.untried_actions:
+            action_id = node.untried_actions.pop(0)
+            reward = _action_reward(node.selected_ids, node.selected_roles, node.role or "", action_id)
+            next_role = _predict_next_role(node.role, node.depth + 1)
+            child = _MCTSNode(
+                role=next_role,
+                depth=node.depth + 1,
+                selected_ids=node.selected_ids + (action_id,),
+                selected_roles=node.selected_roles + (_normalize_role_name(node.role),),
+                parent=node,
+                action_card_id=action_id,
+                action_reward=reward,
+            )
+            if child.role:
+                child.untried_actions = [
+                    str(item.get("card_id"))
+                    for item in _get_candidates_for_role(child.role)
+                    if item.get("card_id")
+                ]
+            node.children[action_id] = child
+            node = child
+            path.append(node)
+            total_reward += (discount ** max(0, node.depth - 1)) * reward
+
+        sim_role = node.role
+        sim_depth = node.depth
+        sim_selected = list(node.selected_ids)
+        sim_selected_roles = list(node.selected_roles)
+        while sim_role is not None and sim_depth < depth_limit:
+            rollout_candidates = _get_candidates_for_role(sim_role)
+            if not rollout_candidates:
+                break
+            best_rollout = None
+            best_reward = None
+            prev_ids_tuple = tuple(sim_selected)
+            prev_roles_tuple = tuple(sim_selected_roles)
+            for cand in rollout_candidates:
+                cand_id = str(cand.get("card_id") or "")
+                if not cand_id:
+                    continue
+                reward = _action_reward(prev_ids_tuple, prev_roles_tuple, sim_role, cand_id)
+                if best_reward is None or reward > best_reward:
+                    best_reward = reward
+                    best_rollout = cand_id
+            if best_rollout is None or best_reward is None:
+                break
+            total_reward += (discount ** sim_depth) * float(best_reward)
+            sim_selected.append(best_rollout)
+            sim_selected_roles.append(_normalize_role_name(sim_role))
+            sim_depth += 1
+            sim_role = _predict_next_role(sim_role, sim_depth)
+
+        for path_node in path:
+            path_node.visits += 1
+            path_node.total_reward += float(total_reward)
+
+    if not root.children:
+        return None
+
+    best_main = None
+    best_visit = None
+    for card_id, child in root.children.items():
+        if best_visit is None or child.visits > best_visit:
+            best_visit = child.visits
+            best_main = card_id
+    if not best_main:
+        return None
+
+    shadow_sorted = sorted(
+        [(cid, child.visits, child.value) for cid, child in root.children.items() if cid != best_main],
+        key=lambda item: (item[1], item[2]),
+        reverse=True,
+    )
+    selected_shadows = [item[0] for item in shadow_sorted[:2]]
+    selected_shadow = selected_shadows[0] if selected_shadows else None
+
+    reranked = _get_candidates_for_role(role)
+    selection = {
+        "selected_main": best_main,
+        "selected_shadows": selected_shadows,
+        "selected_shadow": selected_shadow,
+        "candidates": list(reranked),
+        "reranked": list(reranked),
+        "mcts": {
+            "iterations": iterations,
+            "depth_limit": depth_limit,
+            "children": {
+                cid: {"visits": child.visits, "avg_reward": child.value}
+                for cid, child in root.children.items()
+            },
+        },
+    }
+    return selection
 
 
 def _append_role_result(results: Dict[str, Any], role: str, output: Any) -> None:
@@ -1463,37 +2132,37 @@ def _select_agent_for_role(
     router_no_rerank: bool,
     reuse_cache: bool,
     cache: Dict[str, Dict[str, Any]],
+    cache_key: Optional[str],
+    selected_agent_ids: Optional[List[str]],
+    team_lambda_compat: float,
+    team_mu_cost: float,
+    team_nu_latency: float,
 ) -> Dict[str, Any]:
     constraints = _ensure_role_constraints(constraints, role)
-    if reuse_cache and role in cache:
-        cached = cache[role]
+    effective_cache_key = cache_key or role
+    if reuse_cache and effective_cache_key in cache:
+        cached = cache[effective_cache_key]
         return dict(cached)
 
-    candidates = get_candidates(
+    candidates, router_candidates = _prepare_role_candidates(
         task_text=task_text,
         role=role,
         constraints=constraints,
-        kind="agent",
-        top_n=top_n,
-        top_k=top_k,
-        mmr_lambda=mmr_lambda,
         registry=registry,
         index=index,
         embedder=embedder,
+        reranker=reranker,
+        top_n=top_n,
+        top_k=top_k,
+        rerank_top_m=rerank_top_m,
+        mmr_lambda=mmr_lambda,
+        router_no_rerank=router_no_rerank,
+        selected_agent_ids=selected_agent_ids,
+        team_lambda_compat=team_lambda_compat,
+        team_mu_cost=team_mu_cost,
+        team_nu_latency=team_nu_latency,
     )
 
-    if candidates:
-        if router_no_rerank:
-            reranked = list(candidates)
-        else:
-            candidate_texts = _build_candidate_texts(registry, candidates)
-            query_text = build_role_query(task_text, role, constraints)
-            rerank_indices, _ = reranker.rank(query_text, candidate_texts, top_m=min(rerank_top_m, len(candidates)))
-            reranked = [candidates[i] for i in rerank_indices]
-    else:
-        reranked = []
-
-    router_candidates = reranked if reranked else candidates
     selected_main = None
     selected_shadows: List[str] = []
     selected_shadow = None
@@ -1523,14 +2192,14 @@ def _select_agent_for_role(
             task_text=task_text,
             role=role,
             constraints=constraints,
-            candidates=reranked,
-            top_probe=min(5, len(reranked)),
+            candidates=router_candidates,
+            top_probe=min(5, len(router_candidates)),
             max_shadows=2,
         )
         selected_main = probe_result.get("selected_main")
         selected_shadows = probe_result.get("selected_shadows", [])
-        if selected_main is None and reranked:
-            selected_main = reranked[0]["card_id"]
+        if selected_main is None and router_candidates:
+            selected_main = router_candidates[0]["card_id"]
         selected_shadow = selected_shadows[0] if selected_shadows else None
 
     selection = {
@@ -1538,9 +2207,10 @@ def _select_agent_for_role(
         "selected_shadows": selected_shadows,
         "selected_shadow": selected_shadow,
         "candidates": candidates,
-        "reranked": reranked,
+        "reranked": router_candidates,
+        "base_reranked": reranked,
     }
-    cache[role] = dict(selection)
+    cache[effective_cache_key] = dict(selection)
     return selection
 
 
@@ -2083,9 +2753,20 @@ def _run_dynamic_workflow(
     max_steps: int,
     allow_unknown_roles: bool,
     reuse_role_selection: bool,
+    reuse_same_role_agent_once: bool,
     summary_max_chars: int,
     soft_connection: bool,
     tool_only: bool,
+    team_lambda_compat: float,
+    team_mu_cost: float,
+    team_nu_latency: float,
+    mcts_dynamic_optimization: bool,
+    mcts_iterations: int,
+    mcts_rollout_depth: int,
+    mcts_exploration: float,
+    mcts_discount: float,
+    mcts_max_candidates: int,
+    pair_success_priors: Optional[Dict[Tuple[str, str, str, str], float]],
     task_context: Optional[Dict[str, Any]] = None,
     force_role: Optional[str] = None,
     strict_roles: bool = False,
@@ -2105,7 +2786,10 @@ def _run_dynamic_workflow(
     log_path: Optional[str] = None
     selection_log: List[Dict[str, Any]] = []
     selection_cache: Dict[str, Dict[str, Any]] = {}
+    role_once_selection_cache: Dict[str, Dict[str, Any]] = {}
     history: List[Dict[str, Any]] = []
+    selected_agent_ids: List[str] = []
+    selected_agent_roles: List[str] = []
 
     tool_executor = (
         ToolExecutor(
@@ -2124,31 +2808,94 @@ def _run_dynamic_workflow(
     def _execute_role(role: str, task_for_role: str, step_idx: int, reason: str, override_tool_only: Optional[bool] = None) -> Optional[Dict[str, Any]]:
         nonlocal log_path
         role_constraints = _ensure_role_constraints(constraints_per_role.get(role), role)
-        selection = _select_agent_for_role(
-            task_text=task_for_role,
+        effective_cache_key = _build_selection_cache_key(
             role=role,
-            constraints=role_constraints,
-            registry=registry,
-            index=index,
-            embedder=embedder,
-            reranker=reranker,
-            top_n=top_n,
-            top_k=top_k,
-            rerank_top_m=rerank_top_m,
-            mmr_lambda=mmr_lambda,
-            router_llm_client=router_llm_client,
-            router_top_m=router_top_m,
-            router_no_rerank=router_no_rerank,
-            reuse_cache=reuse_role_selection,
-            cache=selection_cache,
+            task_text=task_for_role,
+            step_idx=step_idx,
+            topology=config.topology.value,
         )
-        selection_log.append(
-            {
-                "role": role,
-                "selected_main": selection.get("selected_main"),
-                "selected_shadows": selection.get("selected_shadows"),
-            }
-        )
+        role_once_key = _normalize_role_name(role)
+        reused_same_role_agent_once = False
+
+        if reuse_same_role_agent_once and role_once_key in role_once_selection_cache:
+            selection = dict(role_once_selection_cache[role_once_key])
+            reused_same_role_agent_once = True
+        elif reuse_role_selection and effective_cache_key in selection_cache:
+            selection = dict(selection_cache[effective_cache_key])
+        else:
+            selection = None
+            if mcts_dynamic_optimization:
+                selection = _select_agent_with_mcts_dynamic(
+                    task_text=task_for_role,
+                    role=role,
+                    step_idx=step_idx,
+                    config=config,
+                    constraints_per_role=constraints_per_role,
+                    selected_agent_ids=selected_agent_ids,
+                    selected_agent_roles=selected_agent_roles,
+                    registry=registry,
+                    index=index,
+                    embedder=embedder,
+                    reranker=reranker,
+                    top_n=top_n,
+                    top_k=top_k,
+                    rerank_top_m=rerank_top_m,
+                    mmr_lambda=mmr_lambda,
+                    router_no_rerank=router_no_rerank,
+                    team_lambda_compat=team_lambda_compat,
+                    team_mu_cost=team_mu_cost,
+                    team_nu_latency=team_nu_latency,
+                    mcts_iterations=mcts_iterations,
+                    mcts_rollout_depth=mcts_rollout_depth,
+                    mcts_exploration=mcts_exploration,
+                    mcts_discount=mcts_discount,
+                    mcts_max_candidates=mcts_max_candidates,
+                    pair_success_priors=pair_success_priors,
+                )
+
+            if selection is None:
+                selection = _select_agent_for_role(
+                    task_text=task_for_role,
+                    role=role,
+                    constraints=role_constraints,
+                    registry=registry,
+                    index=index,
+                    embedder=embedder,
+                    reranker=reranker,
+                    top_n=top_n,
+                    top_k=top_k,
+                    rerank_top_m=rerank_top_m,
+                    mmr_lambda=mmr_lambda,
+                    router_llm_client=router_llm_client,
+                    router_top_m=router_top_m,
+                    router_no_rerank=router_no_rerank,
+                    reuse_cache=False,
+                    cache=selection_cache,
+                    cache_key=effective_cache_key,
+                    selected_agent_ids=selected_agent_ids,
+                    team_lambda_compat=team_lambda_compat,
+                    team_mu_cost=team_mu_cost,
+                    team_nu_latency=team_nu_latency,
+                )
+
+            if reuse_role_selection:
+                selection_cache[effective_cache_key] = dict(selection)
+            if reuse_same_role_agent_once:
+                role_once_selection_cache[role_once_key] = dict(selection)
+        selected_main = selection.get("selected_main")
+        if selected_main:
+            selected_agent_ids.append(str(selected_main))
+            selected_agent_roles.append(_normalize_role_name(role))
+        selection_item = {
+            "role": role,
+            "selected_main": selected_main,
+            "selected_shadows": selection.get("selected_shadows"),
+        }
+        if reused_same_role_agent_once:
+            selection_item["reused_same_role_agent_once"] = True
+        if mcts_dynamic_optimization and selection.get("mcts") is not None:
+            selection_item["mcts"] = selection.get("mcts")
+        selection_log.append(selection_item)
         meta = {
             "step": step_idx,
             "topology": config.topology.value,
@@ -2363,9 +3110,19 @@ def run_workflow(
     max_steps: int = 6,
     allow_unknown_roles: bool = False,
     reuse_role_selection: bool = True,
+    reuse_same_role_agent_once: bool = False,
     summary_max_chars: int = 400,
     soft_connection: bool = False,
     tool_only: bool = False,
+    team_lambda_compat: float = 0.2,
+    team_mu_cost: float = 0.05,
+    team_nu_latency: float = 0.05,
+    mcts_dynamic_optimization: bool = False,
+    mcts_iterations: int = 64,
+    mcts_rollout_depth: int = 4,
+    mcts_exploration: float = 1.414,
+    mcts_discount: float = 0.95,
+    mcts_max_candidates: int = 8,
     force_role: Optional[str] = None,
     strict_roles: bool = False,
 ) -> Dict[str, Any]:
@@ -2403,6 +3160,7 @@ def run_workflow(
         topology_value and topology_value not in {"linear", "fixed"}
     )
     if dynamic_mode:
+        pair_success_priors = _load_pair_success_priors(bandit_db_path, workflow_version)
         dynamic_result = _run_dynamic_workflow(
             task_text=task_text,
             role_list=role_list,
@@ -2439,9 +3197,20 @@ def run_workflow(
             allow_unknown_roles=allow_unknown_roles or dynamic_mode,
             force_role=force_role,
             reuse_role_selection=reuse_role_selection,
+            reuse_same_role_agent_once=reuse_same_role_agent_once,
             summary_max_chars=summary_max_chars,
             soft_connection=soft_connection,
             tool_only=tool_only,
+            team_lambda_compat=team_lambda_compat,
+            team_mu_cost=team_mu_cost,
+            team_nu_latency=team_nu_latency,
+            mcts_dynamic_optimization=mcts_dynamic_optimization,
+            mcts_iterations=mcts_iterations,
+            mcts_rollout_depth=mcts_rollout_depth,
+            mcts_exploration=mcts_exploration,
+            mcts_discount=mcts_discount,
+            mcts_max_candidates=mcts_max_candidates,
+            pair_success_priors=pair_success_priors,
             task_context=task_context,
             strict_roles=strict_roles,
         )
@@ -2470,6 +3239,13 @@ def run_workflow(
                             reward=1.0 if checker_ok else 0.0,
                             confidence=0.5,
                         )
+            _update_pair_success_stats(
+                bandit_db_path,
+                workflow_version=workflow_version,
+                selections=selections_list,
+                reward=1.0 if checker_ok else 0.0,
+                confidence=1.0,
+            )
 
         results = dynamic_result.get("results", {})
         answer_lines = [f"[{role}] {results.get(role)}" for role in results.keys()]
@@ -2483,71 +3259,50 @@ def run_workflow(
             "topology": dynamic_result.get("topology"),
         }
 
+    selected_agent_ids: List[str] = []
+    selection_cache: Dict[str, Dict[str, Any]] = {}
     for role in role_list:
         constraints = _ensure_role_constraints(constraints_per_role.get(role), role)
-        candidates = get_candidates(
+        selection = _select_agent_for_role(
             task_text=task_text,
             role=role,
             constraints=constraints,
-            kind="agent",
-            top_n=top_n,
-            top_k=top_k,
-            mmr_lambda=mmr_lambda,
             registry=registry,
             index=index,
             embedder=embedder,
+            reranker=reranker,
+            top_n=top_n,
+            top_k=top_k,
+            rerank_top_m=rerank_top_m,
+            mmr_lambda=mmr_lambda,
+            router_llm_client=router_llm_client,
+            router_top_m=router_top_m,
+            router_no_rerank=router_no_rerank,
+            reuse_cache=reuse_role_selection,
+            cache=selection_cache,
+            cache_key=(
+                _normalize_role_name(role)
+                if reuse_same_role_agent_once
+                else _build_selection_cache_key(
+                    role=role,
+                    task_text=task_text,
+                    step_idx=0,
+                    topology="linear",
+                )
+            ),
+            selected_agent_ids=selected_agent_ids,
+            team_lambda_compat=team_lambda_compat,
+            team_mu_cost=team_mu_cost,
+            team_nu_latency=team_nu_latency,
         )
 
-        if candidates:
-            if router_no_rerank:
-                reranked = list(candidates)
-            else:
-                candidate_texts = _build_candidate_texts(registry, candidates)
-                query_text = build_role_query(task_text, role, constraints)
-                rerank_indices, _ = reranker.rank(query_text, candidate_texts, top_m=min(rerank_top_m, len(candidates)))
-                reranked = [candidates[i] for i in rerank_indices]
-        else:
-            reranked = []
+        selected_main = selection.get("selected_main")
+        selected_shadows = list(selection.get("selected_shadows") or [])
+        selected_shadow = selection.get("selected_shadow")
+        reranked = list(selection.get("reranked") or [])
 
-        router_candidates = reranked if reranked else candidates
-        selected_main = None
-        selected_shadows: List[str] = []
-        selected_shadow = None
-
-        if router_llm_client and router_candidates:
-            trimmed = router_candidates[: max(1, router_top_m)]
-            selected_main = _select_with_router_llm(
-                router_llm_client,
-                task_text,
-                role,
-                constraints,
-                trimmed,
-                registry,
-            )
-            if selected_main:
-                for cand in trimmed:
-                    cand_id = cand.get("card_id")
-                    if not cand_id or cand_id == selected_main:
-                        continue
-                    selected_shadows.append(cand_id)
-                    if len(selected_shadows) >= 2:
-                        break
-                selected_shadow = selected_shadows[0] if selected_shadows else None
-
-        if selected_main is None:
-            probe_result = probe_commit(
-                task_text=task_text,
-                role=role,
-                constraints=constraints,
-                candidates=reranked,
-                top_probe=min(5, len(reranked)),
-                max_shadows=2,
-            )
-            selected_main = probe_result.get("selected_main")
-            selected_shadows = probe_result.get("selected_shadows", [])
-            if selected_main is None and reranked:
-                selected_main = reranked[0]["card_id"]
-            selected_shadow = selected_shadows[0] if selected_shadows else None
+        if selected_main:
+            selected_agent_ids.append(str(selected_main))
 
         selections[role] = {
             "main": selected_main,
@@ -2745,6 +3500,18 @@ def run_workflow(
                     store.update(workflow_version, role, main_id, reward=1.0 if checker_ok else 0.0, confidence=1.0)
                 for shadow_id in shadow_ids:
                     store.update(workflow_version, role, shadow_id, reward=1.0 if checker_ok else 0.0, confidence=0.5)
+        static_selections = [
+            {"role": role, "selected_main": (selections.get(role) or {}).get("main")}
+            for role in role_list
+            if (selections.get(role) or {}).get("main")
+        ]
+        _update_pair_success_stats(
+            bandit_db_path,
+            workflow_version=workflow_version,
+            selections=static_selections,
+            reward=1.0 if checker_ok else 0.0,
+            confidence=1.0,
+        )
 
     answer_lines = []
     for role in role_list:
