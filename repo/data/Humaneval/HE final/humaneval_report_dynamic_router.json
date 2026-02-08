@@ -1,0 +1,818 @@
+{
+  "total": 161,
+  "passed": 143,
+  "pass_rate": 0.8881987577639752,
+  "results": [
+    {
+      "name": "HumanEval_23_strlen",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_89_encrypt",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_95_check_dict_case",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_85_add",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_140_fix_spaces",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_63_fibfib",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_151_double_the_difference",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_22_filter_integers",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_41_car_race_collision",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_17_parse_music",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_79_decimal_to_binary",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_14_all_prefixes",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_53_add",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_159_eat",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_115_max_fill",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_160_do_algebra",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpqf7stwm4/eval_task.py\", line 54, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpqf7stwm4/eval_task.py\", line 52, in test_check\n    check(do_algebra)\n    ~~~~~^^^^^^^^^^^^\n  File \"/tmp/tmpqf7stwm4/eval_task.py\", line 48, in check\n    assert candidate(['+', '*', '-'], [2, 3, 4, 5]) == 9\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_27_flip_case",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_105_by_length",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_25_factorize",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_96_count_up_to",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_34_unique",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_74_total_match",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_35_max_element",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_132_is_nested",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpxffirhnp/eval_task.py\", line 53, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpxffirhnp/eval_task.py\", line 51, in test_check\n    check(is_nested)\n    ~~~~~^^^^^^^^^^^\n  File \"/tmp/tmpxffirhnp/eval_task.py\", line 42, in check\n    assert candidate('[[]') == False\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_103_rounded_avg",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_113_odd_count",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_109_move_one_ball",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_107_even_odd_palindrome",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_138_is_equal_to_sum_even",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_62_derivative",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp7gz3r43y/eval_task.py\", line 35, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp7gz3r43y/eval_task.py\", line 33, in test_check\n    check(derivative)\n    ~~~~~^^^^^^^^^^^^\n  File \"/tmp/tmp7gz3r43y/eval_task.py\", line 30, in check\n    assert candidate([1]) == []\n           ^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_126_is_sorted",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_161_solve",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_130_tri",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpa7n5v8gt/eval_task.py\", line 49, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpa7n5v8gt/eval_task.py\", line 47, in test_check\n    check(tri)\n    ~~~~~^^^^^\n  File \"/tmp/tmpa7n5v8gt/eval_task.py\", line 35, in check\n    assert candidate(3) == [1, 3, 2, 8]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_36_fizz_buzz",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_29_filter_by_prefix",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_84_solve",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_129_minPath",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmppextdyqc/eval_task.py\", line 84, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmppextdyqc/eval_task.py\", line 82, in test_check\n    check(minPath)\n    ~~~~~^^^^^^^^^\n  File \"/tmp/tmppextdyqc/eval_task.py\", line 72, in check\n    assert candidate([[6, 4, 13, 10], [5, 7, 12, 1], [3, 16, 11, 15], [8, 14, 9, 2]], 7) == [1, 10, 1, 10, 1, 10, 1]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_98_count_upper",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_120_maximum",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_24_largest_divisor",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_88_sort_array",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_106_f",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_77_iscube",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_93_encode",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_91_is_bored",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmportdy3yb/eval_task.py\", line 35, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmportdy3yb/eval_task.py\", line 33, in test_check\n    check(is_bored)\n    ~~~~~^^^^^^^^^^\n  File \"/tmp/tmportdy3yb/eval_task.py\", line 26, in check\n    assert candidate('Is the sky blue?') == 0\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_43_pairs_sum_to_zero",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_71_triangle_area",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_148_bf",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_131_digits",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_101_words_string",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_18_how_many_times",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_137_compare_one",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp0ia2bj9k/eval_task.py\", line 47, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp0ia2bj9k/eval_task.py\", line 45, in test_check\n    check(compare_one)\n    ~~~~~^^^^^^^^^^^^^\n  File \"/tmp/tmp0ia2bj9k/eval_task.py\", line 35, in check\n    assert candidate(1, 2) == 2\n           ~~~~~~~~~^^^^^^\n  File \"/tmp/tmp0ia2bj9k/eval_task.py\", line 19, in compare_one\n    if isinstance(value, str):\n                  ^^^^^\nUnboundLocalError: cannot access local variable 'value' where it is not associated with a value"
+    },
+    {
+      "name": "HumanEval_51_remove_vowels",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_70_strange_sort_list",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_20_find_closest_elements",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_76_is_simple_power",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_39_prime_fib",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_145_order_by_points",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp6aaib4cn/eval_task.py\", line 32, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp6aaib4cn/eval_task.py\", line 30, in test_check\n    check(order_by_points)\n    ~~~~~^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmp6aaib4cn/eval_task.py\", line 22, in check\n    assert candidate([1, 11, -1, -11, -12]) == [-1, -11, 1, -12, 11]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_0_has_close_elements",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_10_make_palindrome",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_11_string_xor",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_139_special_factorial",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_122_add_elements",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_46_fib4",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_104_unique_digits",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpbcgm78io/eval_task.py\", line 43, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpbcgm78io/eval_task.py\", line 41, in test_check\n    check(unique_digits)\n    ~~~~~^^^^^^^^^^^^^^^\n  File \"/tmp/tmpbcgm78io/eval_task.py\", line 35, in check\n    assert candidate([15, 33, 1422, 1]) == [1, 15, 33]\n           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmpbcgm78io/eval_task.py\", line 15, in unique_digits\n    while n > 0:\n          ^\nUnboundLocalError: cannot access local variable 'n' where it is not associated with a value"
+    },
+    {
+      "name": "HumanEval_117_select_words",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_72_will_it_fly",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_55_fib",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_153_Strongest_Extension",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_119_match_parens",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpcjqf69d6/eval_task.py\", line 51, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpcjqf69d6/eval_task.py\", line 49, in test_check\n    check(match_parens)\n    ~~~~~^^^^^^^^^^^^^^\n  File \"/tmp/tmpcjqf69d6/eval_task.py\", line 35, in check\n    assert candidate(['()(', ')']) == 'Yes'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_90_next_smallest",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_92_any_int",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_2_truncate_number",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_42_incr_list",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_150_x_or_y",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpfwft8z9t/eval_task.py\", line 42, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpfwft8z9t/eval_task.py\", line 40, in test_check\n    check(x_or_y)\n    ~~~~~^^^^^^^^\n  File \"/tmp/tmpfwft8z9t/eval_task.py\", line 28, in check\n    assert candidate(7, 34, 12) == 34\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_49_modp",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_155_even_odd_count",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_80_is_happy",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_59_largest_prime_factor",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_66_digitSum",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_21_rescale_to_unit",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_121_solution",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_68_pluck",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_147_get_max_triples",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_110_exchange",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_47_median",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_82_prime_length",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_73_smallest_change",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_133_sum_squares",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_141_file_name_check",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_40_triples_sum_to_zero",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_127_intersection",
+      "ok": false,
+      "error": "File \"/tmp/tmpbb6bo8o8/eval_task.py\", line 40\n    start1, end1 = interval1\n                            ^\nIndentationError: unindent does not match any outer indentation level",
+      "repair": {
+        "attempted": true,
+        "success": false,
+        "original_error": "File \"/tmp/tmpxrdzcm7v/eval_task.py\", line 40\n    start1, end1 = interval1\n                            ^\nIndentationError: unindent does not match any outer indentation level",
+        "final_error": "File \"/tmp/tmpbb6bo8o8/eval_task.py\", line 40\n    start1, end1 = interval1\n                            ^\nIndentationError: unindent does not match any outer indentation level"
+      }
+    },
+    {
+      "name": "HumanEval_1_separate_paren_groups",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_152_compare",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_83_starts_one_ends",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_134_check_if_last_char_is_a_letter",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_124_valid_date",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_108_count_nums",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpq7ayd212/eval_task.py\", line 31, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpq7ayd212/eval_task.py\", line 29, in test_check\n    check(count_nums)\n    ~~~~~^^^^^^^^^^^^\n  File \"/tmp/tmpq7ayd212/eval_task.py\", line 19, in check\n    assert candidate([]) == 0\n           ~~~~~~~~~^^^^\n  File \"/tmp/tmpq7ayd212/eval_task.py\", line 16, in count_nums\n    return sum(any(int(digit) > 0 for digit in str(num)[1:] if num < 0) or any(int(digit) > 0 for digit in str(num)) for num in lst)\n                                                                                                                                ^^^\nNameError: name 'lst' is not defined. Did you mean: 'list'?"
+    },
+    {
+      "name": "HumanEval_86_anti_shuffle",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_48_is_palindrome",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_118_get_closest_vowel",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_31_is_prime",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_144_simplify",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_78_hex_key",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_143_words_in_sentence",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpss95d86g/eval_task.py\", line 53, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpss95d86g/eval_task.py\", line 51, in test_check\n    check(words_in_sentence)\n    ~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmpss95d86g/eval_task.py\", line 42, in check\n    assert candidate('This is a test') == 'is'\n           ~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmpss95d86g/eval_task.py\", line 21, in words_in_sentence\n    if n <= 1:\n       ^\nNameError: name 'n' is not defined"
+    },
+    {
+      "name": "HumanEval_111_histogram",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_87_get_row",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_123_get_odd_collatz",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_135_can_arrange",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_19_sort_numbers",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_65_circular_shift",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmptxp41jnp/eval_task.py\", line 31, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmptxp41jnp/eval_task.py\", line 29, in test_check\n    check(circular_shift)\n    ~~~~~^^^^^^^^^^^^^^^^\n  File \"/tmp/tmptxp41jnp/eval_task.py\", line 23, in check\n    assert candidate(12, 2) == '12'\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_142_sum_squares",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_94_skjkasdkd",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp9w_sb9i6/eval_task.py\", line 62, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp9w_sb9i6/eval_task.py\", line 60, in test_check\n    check(skjkasdkd)\n    ~~~~~^^^^^^^^^^^\n  File \"/tmp/tmp9w_sb9i6/eval_task.py\", line 49, in check\n    assert candidate([0, 3, 2, 1, 3, 5, 7, 4, 5, 5, 5, 2, 181, 32, 4, 32, 3, 2, 32, 324, 4, 3]) == 10\n           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmp9w_sb9i6/eval_task.py\", line 21, in skjkasdkd\n    if n <= 1:\n       ^\nNameError: name 'n' is not defined"
+    },
+    {
+      "name": "HumanEval_8_sum_product",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_102_choose_num",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_136_largest_smallest_integers",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_16_count_distinct_characters",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_100_make_a_pile",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_128_prod_signs",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_114_minSubArraySum",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_15_string_sequence",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_154_cycpattern_check",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_57_monotonic",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_12_longest",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_52_below_threshold",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_75_is_multiply_prime",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmp27wvs57p/eval_task.py\", line 35, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmp27wvs57p/eval_task.py\", line 33, in test_check\n    check(is_multiply_prime)\n    ~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmp27wvs57p/eval_task.py\", line 23, in check\n    assert candidate(8) == True\n           ^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_30_get_positive",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_33_sort_third",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_6_parse_nested_parens",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_45_triangle_area",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_97_multiply",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_4_mean_absolute_deviation",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_58_common",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_156_int_to_mini_roman",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_67_fruit_distribution",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_112_reverse_delete",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_13_greatest_common_divisor",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_125_split_words",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_116_sort_array",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_28_concatenate",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_149_sorted_list_sum",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_7_filter_by_substring",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_99_closest_integer",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_64_vowels_count",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_158_find_max",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_162_string_to_md5",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_44_change_base",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_157_right_angle_triangle",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_81_numerical_letter_grade",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_5_intersperse",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_146_specialFilter",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_60_sum_to_n",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_26_remove_duplicates",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_163_generate_integers",
+      "ok": false,
+      "error": "Traceback (most recent call last):\n  File \"/tmp/tmpvjn6d45u/eval_task.py\", line 29, in <module>\n    test_check()\n    ~~~~~~~~~~^^\n  File \"/tmp/tmpvjn6d45u/eval_task.py\", line 27, in test_check\n    check(generate_integers)\n    ~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/tmpvjn6d45u/eval_task.py\", line 21, in check\n    assert candidate(2, 10) == [2, 4, 6, 8]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError"
+    },
+    {
+      "name": "HumanEval_9_rolling_max",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_3_below_zero",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_69_search",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_61_correct_bracketing",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_37_sort_even",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_54_same_chars",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "name": "HumanEval_56_correct_bracketing",
+      "ok": true,
+      "error": ""
+    }
+  ]
+}

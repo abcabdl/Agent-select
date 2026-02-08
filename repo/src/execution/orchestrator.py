@@ -2208,7 +2208,7 @@ def _select_agent_for_role(
         "selected_shadow": selected_shadow,
         "candidates": candidates,
         "reranked": router_candidates,
-        "base_reranked": reranked,
+        "base_reranked": list(router_candidates),
     }
     cache[effective_cache_key] = dict(selection)
     return selection

@@ -666,6 +666,8 @@ def _auto_generate_solutions_orchestrator(
     mcts_exploration: float,
     mcts_discount: float,
     mcts_max_candidates: int,
+    baseline_fixed_bcb_mcts: bool,
+    baseline_fixed_bcb_router_gpt4o: bool,
     force_role: Optional[str] = None,
     strict_roles: bool = True,
 ) -> Tuple[Dict[str, str], Dict[str, Dict[str, Any]]]:
@@ -712,6 +714,20 @@ def _auto_generate_solutions_orchestrator(
             timeout_s=next_role_timeout,
             max_retries=next_role_retries,
         )
+
+    if baseline_fixed_bcb_mcts and baseline_fixed_bcb_router_gpt4o:
+        raise SystemExit(
+            "Only one baseline switch can be enabled at a time: "
+            "--baseline_fixed_bcb_mcts or --baseline_fixed_bcb_router_gpt4o"
+        )
+
+    baseline_fixed_topology_config: Dict[str, Any] = {
+        "topology": "chain",
+        "roles": ["builder", "checker", "builder"],
+        "entry_role": "builder",
+        "max_steps": 3,
+        "flow_type": "sequential",
+    }
 
     index = HNSWIndex.load(os.path.join(index_dir, "faiss.index"))
     embedder = build_embedder(
@@ -771,6 +787,41 @@ def _auto_generate_solutions_orchestrator(
                 "stop_tokens": stop_tokens,
             } if entry_point else None
 
+            effective_dynamic_topology = dynamic_topology
+            effective_topology = topology
+            effective_topology_config = topology_config
+            effective_max_steps = max_steps
+            effective_mcts_dynamic_optimization = mcts_dynamic_optimization
+            effective_reuse_same_role_agent_once = reuse_same_role_agent_once
+            effective_router_llm_client: Optional[LLMClient] = local_client
+            effective_next_role_llm_client: Optional[LLMClient] = next_role_client or local_client
+            effective_meta_router_llm_client: Optional[LLMClient] = local_client
+
+            if baseline_fixed_bcb_mcts or baseline_fixed_bcb_router_gpt4o:
+                effective_dynamic_topology = True
+                effective_topology = "chain"
+                effective_topology_config = dict(baseline_fixed_topology_config)
+                effective_max_steps = 3
+                effective_reuse_same_role_agent_once = True
+                effective_next_role_llm_client = None
+                effective_meta_router_llm_client = None
+
+            if baseline_fixed_bcb_mcts:
+                effective_mcts_dynamic_optimization = True
+                # router llm is not used on MCTS path; keep local as harmless default
+                effective_router_llm_client = local_client
+            elif baseline_fixed_bcb_router_gpt4o:
+                # old embedding retrieval + router LLM final choice
+                effective_mcts_dynamic_optimization = False
+                router_remote_client = next_role_client or code_client
+                if router_remote_client is None:
+                    raise SystemExit(
+                        "--baseline_fixed_bcb_router_gpt4o requires a remote OpenAI-compatible client. "
+                        "Please set --next_role_model/--next_role_base_url/--next_role_api_key "
+                        "or --code_model/--code_base_url/--code_api_key."
+                    )
+                effective_router_llm_client = router_remote_client
+
             result = run_workflow(
                 task_text=task_text,
                 roles=roles,
@@ -786,23 +837,23 @@ def _auto_generate_solutions_orchestrator(
                 reranker_model_path=reranker_model,
                 bandit_db_path=bandit_db,
                 llm_client=code_client or local_client,
-                router_llm_client=local_client,
+                router_llm_client=effective_router_llm_client,
                 router_top_m=router_top_m,
                 task_context=task_context,
                 router_no_rerank=router_no_rerank,
-                dynamic_topology=dynamic_topology,
-                topology=topology,
-                topology_config=topology_config,
-                meta_router_llm_client=local_client,
-                next_role_llm_client=next_role_client or local_client,
+                dynamic_topology=effective_dynamic_topology,
+                topology=effective_topology,
+                topology_config=effective_topology_config,
+                meta_router_llm_client=effective_meta_router_llm_client,
+                next_role_llm_client=effective_next_role_llm_client,
                 soft_connection=soft_connection,
-                max_steps=max_steps,
+                max_steps=effective_max_steps,
                 allow_unknown_roles=allow_unknown_roles,
                 reuse_role_selection=reuse_role_selection,
-                reuse_same_role_agent_once=reuse_same_role_agent_once,
+                reuse_same_role_agent_once=effective_reuse_same_role_agent_once,
                 tool_only=tool_only,
                 tool_timeout_s=tool_timeout_s,
-                mcts_dynamic_optimization=mcts_dynamic_optimization,
+                mcts_dynamic_optimization=effective_mcts_dynamic_optimization,
                 mcts_iterations=mcts_iterations,
                 mcts_rollout_depth=mcts_rollout_depth,
                 mcts_exploration=mcts_exploration,
@@ -1047,6 +1098,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mcts_exploration", type=float, default=1.414)
     parser.add_argument("--mcts_discount", type=float, default=0.95)
     parser.add_argument("--mcts_max_candidates", type=int, default=8)
+    parser.add_argument(
+        "--baseline_fixed_bcb_mcts",
+        action="store_true",
+        help="baseline: fixed workflow builder->checker->builder with MCTS agent selection",
+    )
+    parser.add_argument(
+        "--baseline_fixed_bcb_router_gpt4o",
+        action="store_true",
+        help="baseline: fixed workflow builder->checker->builder with embedding retrieval + GPT-4o router final choice",
+    )
     parser.add_argument("--roles", default="code-generation,code-planner,code-testing,code-refactoring", type=str)
     parser.add_argument("--constraints", default="", type=str, help="JSON string per role")
     parser.add_argument("--workflow_version", default="v1", type=str)
@@ -1169,6 +1230,8 @@ def main() -> None:
                     mcts_exploration=args.mcts_exploration,
                     mcts_discount=args.mcts_discount,
                     mcts_max_candidates=args.mcts_max_candidates,
+                    baseline_fixed_bcb_mcts=args.baseline_fixed_bcb_mcts,
+                    baseline_fixed_bcb_router_gpt4o=args.baseline_fixed_bcb_router_gpt4o,
                     force_role=args.force_role or None,
                 )
             else:
