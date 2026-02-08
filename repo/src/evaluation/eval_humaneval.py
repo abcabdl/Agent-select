@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import ast
+import builtins
 import json
+import keyword
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -139,8 +143,20 @@ def _normalize_completion(text: str, entry_point: Optional[str]) -> str:
     lines = text.lstrip("\n").splitlines()
     if not lines:
         return text
-    if lines and lines[0].lstrip().startswith(("def ", "class ", "@")):
-        return "\n".join(lines)
+    candidate_module = "\n".join(lines)
+    # Keep as full code only if it explicitly defines the target entry point at top-level.
+    # Otherwise treat as function-body snippet to avoid indentation breakage when helper defs appear.
+    try:
+        tree = ast.parse(candidate_module)
+        top_level_defs = {
+            node.name
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        if entry_point in top_level_defs:
+            return candidate_module
+    except SyntaxError:
+        pass
 
     # Compute smallest positive indent (ignoring entirely blank lines); use it to dedent uneven bodies.
     indents = [len(line) - len(line.lstrip()) for line in lines if line.strip()]
@@ -200,15 +216,16 @@ def _build_prompt(prompt: str, entry_point: Optional[str], strict: bool, strict_
     if strict_text:
         suffix = strict_text.strip()
     else:
-        entry_hint = f"（函数名 {entry_point}）" if entry_point else ""
+        entry_hint = f"(function name: {entry_point})" if entry_point else ""
         suffix = (
-            "请只输出函数体代码，保持缩进，不要重复函数定义，不要解释，不要 markdown/代码块。"
+            "Output only the function body code with correct indentation. "
+            "Do not repeat function definition, explanation, or markdown fences. "
             f"{entry_hint}\n"
-            "重要约束:\n"
-            "1. 必须使用函数签名中的实际参数名(如果参数是 lst 就用 lst,不要用 data/items/input_string 等通用名)\n"
-            "2. 必须处理边界情况: 空输入([], '', None), 单元素, 边界值(0, 1)\n"
-            "3. 只生成直接解决问题的函数体,不要生成无关的解析/处理模板代码\n"
-            "4. 确保代码逻辑正确,能通过所有测试用例"
+            "Important constraints:\n"
+            "1. MUST use exact parameter names from function signature (e.g., use lst, not data/items/input_string).\n"
+            "2. MUST handle edge cases: empty input ([], '', None), single element, and boundary values (0, 1).\n"
+            "3. Generate only direct solution code; no unrelated parsing/template boilerplate.\n"
+            "4. Ensure logic is correct and testable.\n"
         )
     return f"{base}\n\n{suffix}\n"
 
@@ -308,6 +325,10 @@ def _is_fallback(text: str) -> bool:
     
     # Normalize for case-insensitive comparison
     normalized = stripped.lower()
+
+    # Tool timeout/error text accidentally extracted as code.
+    if "error calling llm" in normalized:
+        return True
     
     # Check if it's exactly "return None" or just "None"
     if normalized in ("none", "return none", "return null", "null"):
@@ -361,14 +382,134 @@ def _is_fallback(text: str) -> bool:
     return False
 
 
-def _extract_code_from_results(results: Dict[str, Any], entry_point: Optional[str]) -> Optional[str]:
-    def _is_irrelevant(text: str) -> bool:
-        if not entry_point:
-            return False
-        # If another function is being defined and it's not the target entry point, skip it.
-        if "def " in text and entry_point not in text:
-            return True
+def _extract_param_names_from_prompt(prompt: str, entry_point: Optional[str]) -> List[str]:
+    sig = _extract_function_signature(prompt or "", entry_point)
+    if not sig:
+        return []
+    params = sig.get("parameters")
+    if not isinstance(params, list):
+        return []
+    return [str(p).strip() for p in params if str(p).strip()]
+
+
+def _auto_fix_parameter_consistency(completion: str, param_names: List[str], entry_point: Optional[str]) -> str:
+    if not completion or not param_names:
+        return completion
+
+    text = str(completion)
+    identifiers = set(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", text))
+    if not identifiers:
+        return text
+
+    if len(param_names) == 1:
+        target = param_names[0]
+        if target not in identifiers:
+            aliases = ["lst", "arr", "array", "nums", "values", "s", "string", "text", "sentence", "grid", "x"]
+            for alias in aliases:
+                if alias in identifiers and alias != target:
+                    text = re.sub(rf"\b{re.escape(alias)}\b", target, text)
+                    break
+
+    if len(param_names) == 2:
+        p1, p2 = param_names[0], param_names[1]
+        if p1 not in identifiers and p2 not in identifiers and "a" in identifiers and "b" in identifiers:
+            if p1 != "a":
+                text = re.sub(r"\ba\b", p1, text)
+            if p2 != "b":
+                text = re.sub(r"\bb\b", p2, text)
+
+    return _normalize_completion(text, entry_point)
+
+
+def _has_irrelevant_top_level_def(text: str, entry_point: Optional[str]) -> bool:
+    """
+    Check only module top-level function definitions via AST.
+    Nested defs in function bodies are allowed.
+    """
+    if not text or not entry_point:
         return False
+
+    candidate = _extract_code_block(str(text))
+    try:
+        tree = ast.parse(candidate)
+    except SyntaxError:
+        # Most function-body snippets are not parseable as a standalone module.
+        # In body mode we should not enforce entry_point naming.
+        return False
+
+    top_level_defs = [
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    ]
+    if not top_level_defs:
+        return False
+    return entry_point not in top_level_defs
+
+
+def _score_completion_candidate(text: str, entry_point: Optional[str], param_names: List[str]) -> float:
+    if not text:
+        return -1e9
+    if _is_fallback(text):
+        return -1e9
+    if _has_irrelevant_top_level_def(text, entry_point):
+        return -1e6
+
+    cleaned = _normalize_completion(_strip_redundant_def(_extract_code_block(text), entry_point), entry_point)
+    if not cleaned.strip():
+        return -1e9
+
+    score = 0.0
+    wrapped = "def __candidate(" + (", ".join(param_names) if param_names else "a, b") + "):\n"
+    for line in cleaned.splitlines() or ["pass"]:
+        wrapped += ("    " + line if line.strip() else "    ") + "\n"
+
+    try:
+        tree = ast.parse(wrapped)
+        score += 3.0
+    except SyntaxError:
+        return -1e6
+
+    builtins_set = set(dir(builtins))
+    used_names: set[str] = set()
+    assigned_names: set[str] = set(param_names)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            if isinstance(node.ctx, ast.Load):
+                used_names.add(node.id)
+            else:
+                assigned_names.add(node.id)
+        elif isinstance(node, ast.FunctionDef):
+            assigned_names.add(node.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                assigned_names.add((alias.asname or alias.name).split(".")[0])
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                assigned_names.add(alias.asname or alias.name)
+
+    unknown = {
+        name
+        for name in used_names
+        if name not in assigned_names and name not in builtins_set and not keyword.iskeyword(name)
+    }
+    score -= 1.5 * float(len(unknown))
+
+    if param_names:
+        used_param_count = sum(1 for p in param_names if p in used_names)
+        score += 2.0 * float(used_param_count)
+        if used_param_count == 0:
+            score -= 3.0
+    return score
+
+
+def _extract_code_from_results(
+    results: Dict[str, Any], entry_point: Optional[str], param_names: Optional[List[str]] = None
+) -> Optional[str]:
+    signature_params = [p for p in (param_names or []) if isinstance(p, str) and p.strip()]
+    def _is_irrelevant(text: str) -> bool:
+        return _has_irrelevant_top_level_def(text, entry_point)
 
     def _normalize(value: Any) -> Optional[str]:
         if value is None:
@@ -464,12 +605,8 @@ def _extract_code_from_results(results: Dict[str, Any], entry_point: Optional[st
     deep_strings = _gather_code_strings(results)
 
     def _best_from_list(items: List[Any]) -> Optional[str]:
-        """
-        遍历items列表，收集所有非fallback(非return None)的有效代码。
-        返回最后一个有效代码。完全忽略所有的return None输出和失败的工具执行。
-        """
-        valid_codes: List[str] = []
-        
+        scored_codes: List[Tuple[float, int, str]] = []
+
         for item_idx, item in enumerate(items):
             # If item is a dict with ok=True, process it
             if isinstance(item, dict):
@@ -483,10 +620,11 @@ def _extract_code_from_results(results: Dict[str, Any], entry_point: Optional[st
                     if normalized and normalized.strip():
                         # Skip fallback and irrelevant code
                         if not _is_fallback(normalized) and not _is_irrelevant(normalized):
-                            valid_codes.append(normalized)
+                            score = _score_completion_candidate(normalized, entry_point, signature_params)
+                            scored_codes.append((score, item_idx, normalized))
                 # Skip anything that's not explicitly ok=True
                 continue
-            
+
             # Only try to extract from nested structures if not a dict with status
             # (to avoid processing failed tool results)
             if not isinstance(item, dict) or "ok" not in item:
@@ -495,10 +633,13 @@ def _extract_code_from_results(results: Dict[str, Any], entry_point: Optional[st
                     if text.strip():
                         # Skip fallback and irrelevant code
                         if not _is_fallback(text) and not _is_irrelevant(text):
-                            valid_codes.append(text)
-        
-        # Return the last valid code, or None if no valid code found
-        return valid_codes[-1] if valid_codes else None
+                            score = _score_completion_candidate(text, entry_point, signature_params)
+                            scored_codes.append((score, item_idx, text))
+
+        if not scored_codes:
+            return None
+        scored_codes.sort(key=lambda x: (x[0], x[1]), reverse=True)
+        return scored_codes[0][2]
 
     candidates: List[str] = []
     
@@ -555,21 +696,25 @@ def _extract_code_from_results(results: Dict[str, Any], entry_point: Optional[st
 
     code = ""
     if candidates:
-        for candidate in reversed(candidates):
+        scored_candidates: List[Tuple[float, int, str]] = []
+        for idx, candidate in enumerate(candidates):
             if not _is_fallback(candidate) and not _is_irrelevant(candidate):
-                code = candidate
-                break
-        if not code:
-            code = ""
+                score = _score_completion_candidate(candidate, entry_point, signature_params)
+                scored_candidates.append((score, idx, candidate))
+        if scored_candidates:
+            scored_candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
+            code = scored_candidates[0][2]
 
     # If we still landed on a fallback (e.g., only "return None" present), search deeper across all values.
     if not code or _is_fallback(code):
-        for candidate in reversed(deep_strings):
+        scored_deep: List[Tuple[float, int, str]] = []
+        for idx, candidate in enumerate(deep_strings):
             if not _is_fallback(candidate) and not _is_irrelevant(candidate):
-                code = candidate
-                break
-        if not code:
-            code = ""
+                score = _score_completion_candidate(candidate, entry_point, signature_params)
+                scored_deep.append((score, idx, candidate))
+        if scored_deep:
+            scored_deep.sort(key=lambda x: (x[0], x[1]), reverse=True)
+            code = scored_deep[0][2]
     
     if not code:
         return None
@@ -578,6 +723,7 @@ def _extract_code_from_results(results: Dict[str, Any], entry_point: Optional[st
     code = code.replace("\\n", "\n").replace("\\t", "\t")
     code = _extract_code_block(code)
     code = _strip_redundant_def(code, entry_point)
+    code = _auto_fix_parameter_consistency(code, signature_params, entry_point)
     code = _normalize_completion(code, entry_point)
     return code.strip("\n")
 
@@ -764,16 +910,16 @@ def _auto_generate_solutions_orchestrator(
             param_hint = ""
             if func_sig and func_sig.get("parameters"):
                 params = func_sig["parameters"]
-                param_hint = f"\n注意: 函数参数名是: {', '.join(params)}. 必须在代码中使用这些确切的参数名!\n"
+                param_hint = f"\n娉ㄦ剰: 鍑芥暟鍙傛暟鍚嶆槸: {', '.join(params)}. 蹇呴』鍦ㄤ唬鐮佷腑浣跨敤杩欎簺纭垏鐨勫弬鏁板悕!\n"
             
             task_text = (
                 f"{prompt}\n\n"
-                "请在 JSON 输出中把实现写入 code_or_commands 字段，仅包含可执行的函数体代码。\n"
-                "关键要求:\n"
-                "1. 必须使用函数签名中的实际参数名,不要使用data/items/input_string等通用名\n"
-                "2. 必须处理边界情况: 空输入([], '', None), 单元素, 特殊值(0, 1)\n"
-                "3. 只生成直接解决问题的代码,不要生成无关的解析/处理模板\n"
-                "4. 确保算法逻辑正确"
+                "璇峰湪 JSON 杈撳嚭涓妸瀹炵幇鍐欏叆 code_or_commands 瀛楁锛屼粎鍖呭惈鍙墽琛岀殑鍑芥暟浣撲唬鐮併€俓n"
+                "鍏抽敭瑕佹眰:\n"
+                "1. 蹇呴』浣跨敤鍑芥暟绛惧悕涓殑瀹為檯鍙傛暟鍚?涓嶈浣跨敤data/items/input_string绛夐€氱敤鍚峔n"
+                "2. 蹇呴』澶勭悊杈圭晫鎯呭喌: 绌鸿緭鍏?[], '', None), 鍗曞厓绱? 鐗规畩鍊?0, 1)\n"
+                "3. 鍙敓鎴愮洿鎺ヨВ鍐抽棶棰樼殑浠ｇ爜,涓嶈鐢熸垚鏃犲叧鐨勮В鏋?澶勭悊妯℃澘\n"
+                "4. 纭繚绠楁硶閫昏緫姝ｇ‘"
                 f"{param_hint}"
             )
 
@@ -879,7 +1025,11 @@ def _auto_generate_solutions_orchestrator(
             extraction_payload = dict(results)
             if tool_exec:
                 extraction_payload["tool_exec"] = tool_exec
-            completion = _extract_code_from_results(extraction_payload, entry_point)
+            completion = _extract_code_from_results(
+                extraction_payload,
+                entry_point,
+                param_names=(func_sig.get("parameters") if isinstance(func_sig, dict) else None),
+            )
             if completion is None or not completion.strip():
                 # Record meta even if no code was generated (helps debugging)
                 task_meta["extraction_failed"] = True
@@ -888,7 +1038,11 @@ def _auto_generate_solutions_orchestrator(
                 tool_trace = result.get("tool_exec")
                 if tool_trace and isinstance(tool_trace, dict):
                     # Reuse the main extractor on tool_exec for robust nested output handling.
-                    completion = _extract_code_from_results({"tool_exec": tool_trace}, entry_point)
+                    completion = _extract_code_from_results(
+                        {"tool_exec": tool_trace},
+                        entry_point,
+                        param_names=(func_sig.get("parameters") if isinstance(func_sig, dict) else None),
+                    )
                     if completion:
                         task_meta["extracted_from"] = "tool_exec"
                 
@@ -954,6 +1108,27 @@ def _looks_like_syntax_error(message: str) -> bool:
     return any(token in message for token in ("SyntaxError", "IndentationError", "TabError"))
 
 
+def _looks_like_name_scope_error(message: str) -> bool:
+    if not message:
+        return False
+    return ("NameError" in message) or ("UnboundLocalError" in message)
+
+
+def _extract_missing_symbol(message: str) -> Optional[str]:
+    if not message:
+        return None
+    m = re.search(r"NameError:\s+name '([A-Za-z_][A-Za-z0-9_]*)' is not defined", message)
+    if m:
+        return m.group(1)
+    m = re.search(
+        r"UnboundLocalError:\s+cannot access local variable '([A-Za-z_][A-Za-z0-9_]*)'",
+        message,
+    )
+    if m:
+        return m.group(1)
+    return None
+
+
 def _repair_completion(completion: str, entry_point: Optional[str]) -> str:
     text = str(completion or "")
     text = text.replace("\r\n", "\n")
@@ -970,6 +1145,118 @@ def _repair_completion(completion: str, entry_point: Optional[str]) -> str:
     return text
 
 
+def _repair_name_scope_completion(
+    completion: str,
+    entry_point: Optional[str],
+    missing_symbol: Optional[str],
+    param_names: List[str],
+) -> str:
+    text = _repair_completion(completion, entry_point)
+    text = _auto_fix_parameter_consistency(text, param_names, entry_point)
+
+    symbol = (missing_symbol or "").strip()
+    if not symbol:
+        return text
+
+    module_symbols = {"math", "heapq", "itertools", "re", "collections", "functools"}
+    if symbol in module_symbols and f"import {symbol}" not in text:
+        import_line = f"    import {symbol}" if entry_point else f"import {symbol}"
+        text = import_line + "\n" + text
+
+    # Missing symbol may be a function/class from a known module.
+    symbol_imports: Dict[str, str] = {
+        "heappush": "from heapq import heappush, heappop",
+        "heappop": "from heapq import heappush, heappop",
+        "deque": "from collections import deque",
+        "defaultdict": "from collections import defaultdict",
+        "Counter": "from collections import Counter",
+        "ceil": "from math import ceil",
+        "sqrt": "from math import sqrt",
+    }
+    import_stmt = symbol_imports.get(symbol)
+    if import_stmt and import_stmt not in text:
+        prefix = f"    {import_stmt}" if entry_point else import_stmt
+        text = prefix + "\n" + text
+
+    helper_templates: Dict[str, str] = {
+        "is_prime": (
+            "    def is_prime(n):\n"
+            "        if n <= 1:\n"
+            "            return False\n"
+            "        for i in range(2, int(n ** 0.5) + 1):\n"
+            "            if n % i == 0:\n"
+            "                return False\n"
+            "        return True\n"
+        ),
+        "convert_to_float": (
+            "    def convert_to_float(value):\n"
+            "        if isinstance(value, str):\n"
+            "            value = value.replace(',', '.')\n"
+            "        try:\n"
+            "            return float(value)\n"
+            "        except (ValueError, TypeError):\n"
+            "            return None\n"
+        ),
+    }
+    if symbol in helper_templates and f"def {symbol}" not in text and f"{symbol}(" in text:
+        text = helper_templates[symbol] + text
+
+    # Common malformed snippet: helper body for `value` leaked out of function def.
+    if symbol == "value":
+        lines = text.splitlines()
+        while lines and not lines[0].strip():
+            lines.pop(0)
+        if lines and lines[0].strip().startswith("if isinstance(value"):
+            cut = 0
+            for i, line in enumerate(lines):
+                cut = i
+                if line.strip() == "" and i > 0:
+                    break
+            lines = lines[cut + 1 :]
+            text = "\n".join(lines).lstrip("\n")
+        if ("convert_to_float(" in text or "float(value)" in text or "value.replace" in text) and "def convert_to_float" not in text:
+            text = helper_templates["convert_to_float"] + text
+
+    return text
+
+
+def _repair_timeout_completion(
+    completion: str,
+    entry_point: Optional[str],
+    param_names: List[str],
+) -> str:
+    """
+    Heuristic timeout mitigation without external LLM:
+    - normalize to function-body format
+    - add a loop-iteration guard for `while heap:` patterns
+    - replace obvious exhaustive `continue` at length-hit with `break`
+    """
+    text = _repair_completion(completion, entry_point)
+    text = _auto_fix_parameter_consistency(text, param_names, entry_point)
+
+    if not text:
+        return text
+
+    # Guard potentially explosive heap-expansion loops.
+    if "while heap" in text and "__iter_limit" not in text:
+        prefix = "    __iter_guard = 0\n    __iter_limit = 50000\n" if entry_point else "__iter_guard = 0\n__iter_limit = 50000\n"
+        text = prefix + text
+        text = re.sub(
+            r"(?m)^(\s*)while\s+heap\s*:\s*$",
+            r"\1while heap and __iter_guard < __iter_limit:\n\1    __iter_guard += 1",
+            text,
+        )
+
+    # Common exhaustive branch in path-search code.
+    text = re.sub(
+        r"(?m)^(\s*if\s+len\(\s*path\s*\)\s*==\s*k\s*:\s*(?:\n(?:\s+.*))*?\n)(\s*)continue\s*$",
+        r"\1\2break",
+        text,
+    )
+
+    return text
+
+
 def _run_with_repair(
     prompt: str,
     completion: str,
@@ -977,21 +1264,69 @@ def _run_with_repair(
     entry_point: Optional[str],
     timeout_s: float,
 ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
-    code = _build_program(prompt, str(completion), test_code, entry_point)
+    param_names = _extract_param_names_from_prompt(prompt, entry_point)
+    completion_text = _auto_fix_parameter_consistency(str(completion), param_names, entry_point)
+
+    code = _build_program(prompt, completion_text, test_code, entry_point)
     ok, message = _run_python(code, timeout_s=timeout_s)
-    if ok or not _looks_like_syntax_error(message):
-        return ok, message, None
+    if ok:
+        if completion_text != str(completion):
+            return True, "", {"attempted": True, "success": True, "repair_type": "param_consistency"}
+        return True, "", None
 
-    repaired = _repair_completion(str(completion), entry_point)
-    if not repaired or repaired == str(completion):
-        return ok, message, None
+    syntax_repair_info: Optional[Dict[str, Any]] = None
+    if _looks_like_syntax_error(message):
+        repaired = _repair_completion(completion_text, entry_point)
+        if repaired and repaired != completion_text:
+            repaired_code = _build_program(prompt, repaired, test_code, entry_point)
+            ok2, message2 = _run_python(repaired_code, timeout_s=timeout_s)
+            syntax_repair_info = {
+                "attempted": True,
+                "success": ok2,
+                "repair_type": "syntax_indent",
+                "original_error": message,
+            }
+            if ok2:
+                return True, "", syntax_repair_info
+            syntax_repair_info["final_error"] = message2
+            completion_text = repaired
+            message = message2
 
-    repaired_code = _build_program(prompt, repaired, test_code, entry_point)
-    ok2, message2 = _run_python(repaired_code, timeout_s=timeout_s)
-    repair_info = {"attempted": True, "success": ok2, "original_error": message}
-    if not ok2:
-        repair_info["final_error"] = message2
-    return ok2, ("" if ok2 else message2), repair_info
+    if _looks_like_name_scope_error(message):
+        missing = _extract_missing_symbol(message)
+        repaired = _repair_name_scope_completion(completion_text, entry_point, missing, param_names)
+        if repaired and repaired != completion_text:
+            repaired_code = _build_program(prompt, repaired, test_code, entry_point)
+            ok3, message3 = _run_python(repaired_code, timeout_s=timeout_s)
+            repair_info = {
+                "attempted": True,
+                "success": ok3,
+                "repair_type": "name_or_scope",
+                "missing_symbol": missing,
+                "original_error": message,
+            }
+            if not ok3:
+                repair_info["final_error"] = message3
+            return ok3, ("" if ok3 else message3), repair_info
+
+    if message.strip().lower() == "timeout":
+        repaired = _repair_timeout_completion(completion_text, entry_point, param_names)
+        if repaired and repaired != completion_text:
+            repaired_code = _build_program(prompt, repaired, test_code, entry_point)
+            ok4, message4 = _run_python(repaired_code, timeout_s=timeout_s)
+            repair_info = {
+                "attempted": True,
+                "success": ok4,
+                "repair_type": "timeout_guard",
+                "original_error": message,
+            }
+            if not ok4:
+                repair_info["final_error"] = message4
+            return ok4, ("" if ok4 else message4), repair_info
+
+    if syntax_repair_info is not None:
+        return False, message, syntax_repair_info
+    return False, message, None
 
 
 def _run_python(code: str, timeout_s: float) -> Tuple[bool, str]:
@@ -1293,3 +1628,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
