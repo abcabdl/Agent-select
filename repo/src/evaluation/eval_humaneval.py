@@ -123,15 +123,53 @@ def _extract_code_block(text: str) -> str:
 def _strip_redundant_def(text: str, entry_point: Optional[str]) -> str:
     if not entry_point or not text:
         return text
-    target = f"def {entry_point}"
+    target_pattern = re.compile(rf"^\s*def\s+{re.escape(entry_point)}\s*\(")
     lines = text.splitlines()
     for idx, line in enumerate(lines):
-        if line.lstrip().startswith(target):
+        if target_pattern.match(line):
             body_lines = lines[idx + 1 :]
             if not body_lines:
                 return text
             return "\n".join(body_lines).lstrip("\n")
     return text
+
+
+def _normalize_body_indentation(lines: List[str]) -> List[str]:
+    """
+    Normalize body indentation levels for extracted snippets.
+    This repairs cases like:
+        # comment
+            if ...
+    where an `unexpected indent` would occur in a function body.
+    """
+    block_openers = re.compile(
+        r"^(?:if|elif|else|for|while|try|except|finally|with|def|class|match|case)\b.*:\s*$"
+    )
+    normalized: List[str] = []
+    indent_stack: List[int] = []
+
+    for raw in lines:
+        if not raw.strip():
+            normalized.append("")
+            continue
+
+        stripped = raw.lstrip()
+        lead = len(raw) - len(stripped)
+
+        while indent_stack and lead < indent_stack[-1]:
+            indent_stack.pop()
+
+        max_allowed = (indent_stack[-1] + 4) if indent_stack else 0
+        if lead > max_allowed:
+            lead = max_allowed
+
+        rebuilt = (" " * lead) + stripped
+        normalized.append(rebuilt)
+
+        if block_openers.match(stripped):
+            indent_stack.append(lead + 4)
+
+    return normalized
 
 
 def _normalize_completion(text: str, entry_point: Optional[str]) -> str:
@@ -172,6 +210,7 @@ def _normalize_completion(text: str, entry_point: Optional[str]) -> str:
             new_lines.append(line[trim:])
         lines = new_lines
 
+    lines = _normalize_body_indentation(lines)
     lines = [("    " + line) if line.strip() else line for line in lines]
     return "\n".join(lines)
 
@@ -863,6 +902,7 @@ def _auto_generate_solutions_orchestrator(
     max_attempts: int,
     baseline_fixed_bcb_mcts: bool,
     baseline_fixed_bcb_router_gpt4o: bool,
+    dynamic_workflow_router_gpt4o: bool,
     force_role: Optional[str] = None,
     strict_roles: bool = True,
 ) -> Tuple[Dict[str, str], Dict[str, Dict[str, Any]]]:
@@ -913,6 +953,13 @@ def _auto_generate_solutions_orchestrator(
     if baseline_fixed_bcb_mcts and baseline_fixed_bcb_router_gpt4o:
         raise SystemExit(
             "Only one baseline switch can be enabled at a time: "
+            "--baseline_fixed_bcb_mcts or --baseline_fixed_bcb_router_gpt4o"
+        )
+    if dynamic_workflow_router_gpt4o and (
+        baseline_fixed_bcb_mcts or baseline_fixed_bcb_router_gpt4o
+    ):
+        raise SystemExit(
+            "--dynamic_workflow_router_gpt4o cannot be combined with "
             "--baseline_fixed_bcb_mcts or --baseline_fixed_bcb_router_gpt4o"
         )
 
@@ -1012,6 +1059,18 @@ def _auto_generate_solutions_orchestrator(
                 if router_remote_client is None:
                     raise SystemExit(
                         "--baseline_fixed_bcb_router_gpt4o requires a remote OpenAI-compatible client. "
+                        "Please set --next_role_model/--next_role_base_url/--next_role_api_key "
+                        "or --code_model/--code_base_url/--code_api_key."
+                    )
+                effective_router_llm_client = router_remote_client
+            elif dynamic_workflow_router_gpt4o:
+                # dynamic workflow + embedding retrieval + remote router LLM (e.g. GPT-4o) final choice
+                effective_dynamic_topology = True
+                effective_mcts_dynamic_optimization = False
+                router_remote_client = next_role_client or code_client
+                if router_remote_client is None:
+                    raise SystemExit(
+                        "--dynamic_workflow_router_gpt4o requires a remote OpenAI-compatible client. "
                         "Please set --next_role_model/--next_role_base_url/--next_role_api_key "
                         "or --code_model/--code_base_url/--code_api_key."
                     )
@@ -1132,6 +1191,67 @@ def _auto_generate_solutions_orchestrator(
             if use_stop_tokens:
                 completion = _apply_stop_tokens(completion, stop_tokens)
             completion = _normalize_completion(completion, entry_point)
+
+            # Assertion-only logic repair is enabled only for dynamic workflow + MCTS mode
+            # (explicitly excluding fixed-baseline modes).
+            enable_assertion_logic_repair = (
+                effective_dynamic_topology
+                and effective_mcts_dynamic_optimization
+                and not baseline_fixed_bcb_mcts
+                and not baseline_fixed_bcb_router_gpt4o
+            )
+            if (
+                enable_assertion_logic_repair
+                and completion
+                and completion.strip()
+                and entry_point
+                and test
+            ):
+                repair_client = code_client or local_client
+                if repair_client is not None:
+                    eval_timeout_s = max(5.0, float(tool_timeout_s))
+                    current_completion = completion
+                    repair_logs: List[Dict[str, Any]] = []
+                    for attempt in range(2):
+                        candidate_program = _build_program(
+                            original_prompt, current_completion, test, entry_point
+                        )
+                        ok_pre, msg_pre = _run_python(candidate_program, timeout_s=eval_timeout_s)
+                        if ok_pre or (not _looks_like_assertion_error(msg_pre)):
+                            break
+
+                        repaired_completion = _repair_assertion_completion_with_llm(
+                            llm_client=repair_client,
+                            prompt=original_prompt,
+                            completion=current_completion,
+                            test_code=test,
+                            entry_point=entry_point,
+                            error_message=msg_pre,
+                        )
+                        if not repaired_completion or repaired_completion == current_completion:
+                            break
+
+                        repaired_program = _build_program(
+                            original_prompt, repaired_completion, test, entry_point
+                        )
+                        ok_repaired, msg_repaired = _run_python(
+                            repaired_program, timeout_s=eval_timeout_s
+                        )
+                        repair_logs.append(
+                            {
+                                "attempt": attempt + 1,
+                                "repair_type": "assertion_logic",
+                                "success": ok_repaired,
+                                "original_error": msg_pre,
+                                "final_error": "" if ok_repaired else msg_repaired,
+                            }
+                        )
+                        if ok_repaired:
+                            completion = repaired_completion
+                            break
+                        current_completion = repaired_completion
+                    if repair_logs:
+                        task_meta["assertion_logic_repairs"] = repair_logs
             solutions[str(name)] = completion
             f.write(json.dumps({"name": name, "completion": completion}, ensure_ascii=True) + "\n")
             meta[str(name)] = task_meta
@@ -1158,6 +1278,12 @@ def _looks_like_syntax_error(message: str) -> bool:
     return any(token in message for token in ("SyntaxError", "IndentationError", "TabError"))
 
 
+def _looks_like_assertion_error(message: str) -> bool:
+    if not message:
+        return False
+    return "AssertionError" in message
+
+
 def _looks_like_name_scope_error(message: str) -> bool:
     if not message:
         return False
@@ -1177,6 +1303,61 @@ def _extract_missing_symbol(message: str) -> Optional[str]:
     if m:
         return m.group(1)
     return None
+
+
+def _extract_assertion_hint(message: str) -> str:
+    if not message:
+        return ""
+    for line in message.splitlines():
+        if "assert candidate" in line:
+            return line.strip()
+    lines = [line.strip() for line in message.splitlines() if line.strip()]
+    return lines[-1] if lines else ""
+
+
+def _repair_assertion_completion_with_llm(
+    *,
+    llm_client: Any,
+    prompt: str,
+    completion: str,
+    test_code: str,
+    entry_point: Optional[str],
+    error_message: str,
+    max_tokens: int = 700,
+) -> Optional[str]:
+    if llm_client is None:
+        return None
+
+    assertion_hint = _extract_assertion_hint(error_message)
+    tests_preview = "\n".join((test_code or "").splitlines()[:80])
+    messages = [
+        {
+            "role": "user",
+            "content": (
+                f"{prompt or ''}\n\n"
+                f"Entry point: {entry_point or ''}\n\n"
+                "You are fixing a failing implementation.\n"
+                "Return ONLY raw function body code (no markdown, no explanation, no function signature).\n"
+                "Keep correct Python indentation for function body lines.\n"
+                "Do not output import/main/test code.\n\n"
+                f"Current implementation body:\n{completion or ''}\n\n"
+                f"Failing assertion/error hint:\n{assertion_hint}\n\n"
+                f"Reference tests (truncated):\n{tests_preview}\n"
+            ),
+        }
+    ]
+    try:
+        repaired = llm_client.chat(messages, temperature=0.1, max_tokens=max_tokens)
+    except Exception:
+        return None
+
+    repaired = _extract_code_block(str(repaired))
+    repaired = _strip_redundant_def(repaired, entry_point)
+    repaired = _normalize_completion(repaired, entry_point)
+    repaired = repaired.strip("\n")
+    if not repaired or _is_fallback(repaired):
+        return None
+    return repaired
 
 
 def _repair_test_entry_point_alias(
@@ -1531,6 +1712,14 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="baseline: fixed workflow builder->checker->builder with embedding retrieval + GPT-4o router final choice",
     )
+    parser.add_argument(
+        "--dynamic_workflow_router_gpt4o",
+        action="store_true",
+        help=(
+            "one-shot switch: enable dynamic workflow and use embedding retrieval + remote router LLM "
+            "(e.g. GPT-4o) for final agent selection"
+        ),
+    )
     parser.add_argument("--roles", default="code-generation,code-planner,code-testing,code-refactoring", type=str)
     parser.add_argument("--constraints", default="", type=str, help="JSON string per role")
     parser.add_argument("--workflow_version", default="v1", type=str)
@@ -1567,6 +1756,13 @@ def _iter_progress(items: List[dict], desc: str):
 
 def main() -> None:
     args = parse_args()
+    if args.dynamic_workflow_router_gpt4o:
+        args.use_orchestrator = True
+        args.dynamic_topology = True
+        args.mcts_dynamic_optimization = False
+        args.baseline_fixed_bcb_mcts = False
+        args.baseline_fixed_bcb_router_gpt4o = False
+
     tasks = _load_jsonl(args.tasks)
     solutions_path = args.solutions or None
     if not solutions_path and args.out:
@@ -1657,6 +1853,7 @@ def main() -> None:
                     mcts_max_candidates=args.mcts_max_candidates,
                     baseline_fixed_bcb_mcts=args.baseline_fixed_bcb_mcts,
                     baseline_fixed_bcb_router_gpt4o=args.baseline_fixed_bcb_router_gpt4o,
+                    dynamic_workflow_router_gpt4o=args.dynamic_workflow_router_gpt4o,
                     force_role=args.force_role or None,
                 )
             else:
