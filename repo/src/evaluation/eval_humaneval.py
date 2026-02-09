@@ -421,6 +421,54 @@ def _auto_fix_parameter_consistency(completion: str, param_names: List[str], ent
     return _normalize_completion(text, entry_point)
 
 
+def _repair_builtin_shadowing_completion(
+    completion: str,
+    param_names: List[str],
+    entry_point: Optional[str],
+) -> str:
+    """
+    Fix common shadowing bug when a parameter name equals a builtin type name
+    (e.g. `def f(str): ... isinstance(str, str)`).
+    """
+    if not completion or not param_names:
+        return completion
+
+    text = str(completion)
+    type_expr_by_name: Dict[str, str] = {
+        "str": "type('')",
+        "int": "type(0)",
+        "float": "type(0.0)",
+        "bool": "type(True)",
+        "list": "type([])",
+        "dict": "type({})",
+        "tuple": "type(())",
+        "set": "type({1})",
+        "bytes": "type(b'')",
+    }
+
+    for name in param_names:
+        type_expr = type_expr_by_name.get(name)
+        if not type_expr:
+            continue
+        text = re.sub(
+            rf"\bisinstance\(\s*{re.escape(name)}\s*,\s*{re.escape(name)}\s*\)",
+            f"isinstance({name}, {type_expr})",
+            text,
+        )
+        text = re.sub(
+            rf"\btype\(\s*{re.escape(name)}\s*\)\s+is\s+{re.escape(name)}\b",
+            f"type({name}) is {type_expr}",
+            text,
+        )
+        text = re.sub(
+            rf"\btype\(\s*{re.escape(name)}\s*\)\s*==\s*{re.escape(name)}\b",
+            f"type({name}) == {type_expr}",
+            text,
+        )
+
+    return _normalize_completion(text, entry_point)
+
+
 def _has_irrelevant_top_level_def(text: str, entry_point: Optional[str]) -> bool:
     """
     Check only module top-level function definitions via AST.
@@ -812,6 +860,7 @@ def _auto_generate_solutions_orchestrator(
     mcts_exploration: float,
     mcts_discount: float,
     mcts_max_candidates: int,
+    max_attempts: int,
     baseline_fixed_bcb_mcts: bool,
     baseline_fixed_bcb_router_gpt4o: bool,
     force_role: Optional[str] = None,
@@ -982,6 +1031,7 @@ def _auto_generate_solutions_orchestrator(
                 mmr_lambda=mmr_lambda,
                 reranker_model_path=reranker_model,
                 bandit_db_path=bandit_db,
+                max_attempts=max_attempts,
                 llm_client=code_client or local_client,
                 router_llm_client=effective_router_llm_client,
                 router_top_m=router_top_m,
@@ -1129,6 +1179,24 @@ def _extract_missing_symbol(message: str) -> Optional[str]:
     return None
 
 
+def _repair_test_entry_point_alias(
+    test_code: str,
+    missing_symbol: Optional[str],
+    entry_point: Optional[str],
+) -> Optional[str]:
+    """
+    When tests call a stale/wrong function name, rewrite it to the active entry point.
+    """
+    symbol = (missing_symbol or "").strip()
+    if not test_code or not symbol or not entry_point or symbol == entry_point:
+        return None
+    pattern = rf"\b{re.escape(symbol)}\s*\("
+    if not re.search(pattern, test_code):
+        return None
+    repaired = re.sub(pattern, f"{entry_point}(", test_code)
+    return repaired if repaired != test_code else None
+
+
 def _repair_completion(completion: str, entry_point: Optional[str]) -> str:
     text = str(completion or "")
     text = text.replace("\r\n", "\n")
@@ -1153,6 +1221,7 @@ def _repair_name_scope_completion(
 ) -> str:
     text = _repair_completion(completion, entry_point)
     text = _auto_fix_parameter_consistency(text, param_names, entry_point)
+    text = _repair_builtin_shadowing_completion(text, param_names, entry_point)
 
     symbol = (missing_symbol or "").strip()
     if not symbol:
@@ -1266,6 +1335,7 @@ def _run_with_repair(
 ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
     param_names = _extract_param_names_from_prompt(prompt, entry_point)
     completion_text = _auto_fix_parameter_consistency(str(completion), param_names, entry_point)
+    completion_text = _repair_builtin_shadowing_completion(completion_text, param_names, entry_point)
 
     code = _build_program(prompt, completion_text, test_code, entry_point)
     ok, message = _run_python(code, timeout_s=timeout_s)
@@ -1294,6 +1364,22 @@ def _run_with_repair(
 
     if _looks_like_name_scope_error(message):
         missing = _extract_missing_symbol(message)
+
+        repaired_test = _repair_test_entry_point_alias(test_code, missing, entry_point)
+        if repaired_test:
+            alias_code = _build_program(prompt, completion_text, repaired_test, entry_point)
+            ok_alias, message_alias = _run_python(alias_code, timeout_s=timeout_s)
+            alias_repair_info = {
+                "attempted": True,
+                "success": ok_alias,
+                "repair_type": "test_entry_alias",
+                "missing_symbol": missing,
+                "original_error": message,
+            }
+            if ok_alias:
+                return True, "", alias_repair_info
+            alias_repair_info["final_error"] = message_alias
+
         repaired = _repair_name_scope_completion(completion_text, entry_point, missing, param_names)
         if repaired and repaired != completion_text:
             repaired_code = _build_program(prompt, repaired, test_code, entry_point)
@@ -1387,6 +1473,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tasks", required=True, type=str, help="JSONL tasks file (prompt/test)")
     parser.add_argument("--solutions", default="", type=str, help="JSONL solutions file (name+completion)")
     parser.add_argument("--timeout", default=5.0, type=float, help="timeout seconds per task")
+    # Backward-compatible alias for older scripts/commands.
+    parser.add_argument("--time_out", dest="timeout", type=float, help=argparse.SUPPRESS)
     parser.add_argument("--out", default="", type=str, help="optional output JSON path")
     parser.add_argument("--auto_generate", action="store_true", help="generate solutions if missing")
     parser.add_argument("--local_model_dir", type=str, default=None, help="local base model path")
@@ -1459,6 +1547,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--topology_config", default="", type=str)
     parser.add_argument("--soft_connection", action="store_true")
     parser.add_argument("--max_steps", default=6, type=int)
+    parser.add_argument("--max_attempts", default=3, type=int, help="max retries per role/tool execution")
     parser.add_argument("--allow_unknown_roles", action="store_true")
     parser.add_argument("--no_reuse_role_selection", action="store_true")
     parser.add_argument(
@@ -1528,6 +1617,7 @@ def main() -> None:
                     topology_config=topology_config,
                     soft_connection=args.soft_connection,
                     max_steps=args.max_steps,
+                    max_attempts=args.max_attempts,
                     allow_unknown_roles=args.allow_unknown_roles,
                     reuse_role_selection=not args.no_reuse_role_selection,
                     reuse_same_role_agent_once=args.reuse_same_role_agent_once,
@@ -1628,4 +1718,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
