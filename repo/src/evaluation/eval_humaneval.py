@@ -1,17 +1,10 @@
 from __future__ import annotations
 
 import argparse
-import ast
-import builtins
 import json
-import keyword
 import logging
 import os
-import re
-import subprocess
 import sys
-import tempfile
-import textwrap
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -29,6 +22,18 @@ SRC_DIR = Path(__file__).resolve().parents[1]
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from evaluation.humaneval_postprocess import (
+    _apply_stop_tokens,
+    _build_program,
+    _extract_code_block,
+    _extract_code_from_results,
+    _extract_function_signature,
+    _looks_like_assertion_error,
+    _normalize_completion,
+    _repair_assertion_completion_with_llm,
+    _evaluate_with_postprocess_check,
+    _run_python,
+)
 
 def _load_jsonl(path: str) -> List[dict]:
     items: List[dict] = []
@@ -39,7 +44,6 @@ def _load_jsonl(path: str) -> List[dict]:
                 continue
             items.append(json.loads(line))
     return items
-
 
 def _load_solutions(path: Optional[str]) -> Dict[str, str]:
     if not path:
@@ -52,201 +56,6 @@ def _load_solutions(path: Optional[str]) -> Dict[str, str]:
         if name and completion:
             solutions[str(name)] = str(completion)
     return solutions
-
-
-def _apply_stop_tokens(text: str, stop_tokens: List[str]) -> str:
-    if not text or not stop_tokens:
-        return text
-    stop_pos = None
-    for token in stop_tokens:
-        if not token:
-            continue
-        idx = text.find(token)
-        if idx == -1:
-            continue
-        if stop_pos is None or idx < stop_pos:
-            stop_pos = idx
-    if stop_pos is None:
-        return text
-    return text[:stop_pos]
-
-
-def _unwrap_json_code(text: str) -> str:
-    """Unwrap code from JSON string format like '{"code_or_commands": "..."}'."""
-    if not text or "{" not in text:
-        return text
-    try:
-        # Try to find and parse JSON structure
-        start_idx = text.find("{")
-        if start_idx == -1:
-            return text
-        # Extract potential JSON
-        json_text = text[start_idx:]
-        # Try to parse as JSON
-        data = json.loads(json_text)
-        if isinstance(data, dict):
-            # Look for code in common keys
-            for key in ["code_or_commands", "code", "solution", "output"]:
-                if key in data:
-                    value = data[key]
-                    if isinstance(value, str) and value.strip():
-                        return value
-                    elif isinstance(value, dict):
-                        # Nested structure
-                        for nested_key in ["code_or_commands", "code", "solution"]:
-                            if nested_key in value and isinstance(value[nested_key], str):
-                                return value[nested_key]
-    except (json.JSONDecodeError, ValueError):
-        pass
-    return text
-
-
-def _extract_code_block(text: str) -> str:
-    if not text:
-        return text
-    
-    # First try to unwrap JSON-formatted code
-    text = _unwrap_json_code(text)
-    
-    if "```" not in text:
-        return text
-    parts = text.split("```")
-    if len(parts) < 3:
-        return text
-    code = parts[1]
-    lines = code.splitlines()
-    if lines and lines[0].strip().lower() in {"python", "py", "json"}:
-        lines = lines[1:]
-    return "\n".join(lines).strip() or text
-
-
-def _strip_redundant_def(text: str, entry_point: Optional[str]) -> str:
-    if not entry_point or not text:
-        return text
-    target_pattern = re.compile(rf"^\s*def\s+{re.escape(entry_point)}\s*\(")
-    lines = text.splitlines()
-    for idx, line in enumerate(lines):
-        if target_pattern.match(line):
-            body_lines = lines[idx + 1 :]
-            if not body_lines:
-                return text
-            return "\n".join(body_lines).lstrip("\n")
-    return text
-
-
-def _normalize_body_indentation(lines: List[str]) -> List[str]:
-    """
-    Normalize body indentation levels for extracted snippets.
-    This repairs cases like:
-        # comment
-            if ...
-    where an `unexpected indent` would occur in a function body.
-    """
-    block_openers = re.compile(
-        r"^(?:if|elif|else|for|while|try|except|finally|with|def|class|match|case)\b.*:\s*$"
-    )
-    normalized: List[str] = []
-    indent_stack: List[int] = []
-
-    for raw in lines:
-        if not raw.strip():
-            normalized.append("")
-            continue
-
-        stripped = raw.lstrip()
-        lead = len(raw) - len(stripped)
-
-        while indent_stack and lead < indent_stack[-1]:
-            indent_stack.pop()
-
-        max_allowed = (indent_stack[-1] + 4) if indent_stack else 0
-        if lead > max_allowed:
-            lead = max_allowed
-
-        rebuilt = (" " * lead) + stripped
-        normalized.append(rebuilt)
-
-        if block_openers.match(stripped):
-            indent_stack.append(lead + 4)
-
-    return normalized
-
-
-def _normalize_completion(text: str, entry_point: Optional[str]) -> str:
-    if text is None:
-        return ""
-    text = str(text).replace("\\n", "\n")
-    if not entry_point:
-        return text
-    lines = text.lstrip("\n").splitlines()
-    if not lines:
-        return text
-    candidate_module = "\n".join(lines)
-    # Keep as full code only if it explicitly defines the target entry point at top-level.
-    # Otherwise treat as function-body snippet to avoid indentation breakage when helper defs appear.
-    try:
-        tree = ast.parse(candidate_module)
-        top_level_defs = {
-            node.name
-            for node in tree.body
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        }
-        if entry_point in top_level_defs:
-            return candidate_module
-    except SyntaxError:
-        pass
-
-    # Compute smallest positive indent (ignoring entirely blank lines); use it to dedent uneven bodies.
-    indents = [len(line) - len(line.lstrip()) for line in lines if line.strip()]
-    min_pos_indent = min((i for i in indents if i > 0), default=0)
-    if min_pos_indent > 0:
-        new_lines = []
-        for line in lines:
-            if not line.strip():
-                new_lines.append(line)
-                continue
-            leading = len(line) - len(line.lstrip())
-            trim = min(leading, min_pos_indent)
-            new_lines.append(line[trim:])
-        lines = new_lines
-
-    lines = _normalize_body_indentation(lines)
-    lines = [("    " + line) if line.strip() else line for line in lines]
-    return "\n".join(lines)
-
-
-def _extract_function_signature(prompt: str, entry_point: Optional[str]) -> Optional[Dict[str, Any]]:
-    """Extract function signature (name and parameters) from prompt."""
-    if not prompt or not entry_point:
-        return None
-    
-    import re
-    # Match: def function_name(param1, param2, ...): including multiline signatures
-    # Use DOTALL to handle signatures that span multiple lines
-    pattern = rf"def\s+{re.escape(entry_point)}\s*\((.*?)\)\s*(?:->.*?)?:"
-    match = re.search(pattern, prompt, re.DOTALL)
-    if not match:
-        return None
-    
-    params_str = match.group(1).strip()
-    if not params_str:
-        return {"function_name": entry_point, "parameters": []}
-    
-    # Parse parameters (simple parsing, doesn't handle complex annotations)
-    params = []
-    # Remove newlines and extra spaces
-    params_str = " ".join(params_str.split())
-    for param in params_str.split(","):
-        param = param.strip()
-        if not param:
-            continue
-        # Remove type annotations like ": List[int]" or "= default_value"
-        param_name = param.split(":")[0].split("=")[0].strip()
-        if param_name and param_name not in ("*", "**"):
-            params.append(param_name)
-    
-    return {"function_name": entry_point, "parameters": params}
-
 
 def _build_prompt(prompt: str, entry_point: Optional[str], strict: bool, strict_text: Optional[str]) -> str:
     base = prompt or ""
@@ -267,7 +76,6 @@ def _build_prompt(prompt: str, entry_point: Optional[str], strict: bool, strict_
             "4. Ensure logic is correct and testable.\n"
         )
     return f"{base}\n\n{suffix}\n"
-
 
 def _auto_generate_solutions(
     tasks: List[dict],
@@ -317,504 +125,6 @@ def _auto_generate_solutions(
             f.write(json.dumps({"name": name, "completion": completion}, ensure_ascii=True) + "\n")
     return solutions
 
-
-def _is_tool_error(error_obj: Any) -> bool:
-    """Check if error indicates tool execution failure (not code logic error)."""
-    if not error_obj:
-        return False
-    if isinstance(error_obj, dict):
-        error_code = error_obj.get("code", "")
-        error_msg = error_obj.get("message", "")
-        # Tool-level errors that should disqualify the result
-        fatal_errors = [
-            "ImportError",
-            "SyntaxError", 
-            "IndentationError",
-            "TabError",
-            "NameError",
-        ]
-        if error_code in fatal_errors:
-            return True
-        # Also check message content
-        if isinstance(error_msg, str):
-            if "Import blocked" in error_msg:
-                return True
-            if "unterminated string literal" in error_msg:
-                return True
-    return False
-
-
-def _is_fallback(text: str) -> bool:
-    """Check if text is a fallback/placeholder code (like 'return None')."""
-    if not text:
-        return True
-    
-    # Check raw text for common indented patterns first (before stripping)
-    # Handle "return None" with various indentation levels
-    raw_stripped_lines = [line for line in text.split('\n') if line.strip()]
-    if len(raw_stripped_lines) == 1:
-        line_content = raw_stripped_lines[0].strip().lower()
-        if line_content in ("none", "return none", "return null", "null"):
-            return True
-    
-    # Strip and check for empty
-    stripped = text.strip()
-    if not stripped:
-        return True
-    
-    # Normalize for case-insensitive comparison
-    normalized = stripped.lower()
-
-    # Tool timeout/error text accidentally extracted as code.
-    if "error calling llm" in normalized:
-        return True
-    
-    # Check if it's exactly "return None" or just "None"
-    if normalized in ("none", "return none", "return null", "null"):
-        return True
-    
-    # Check if the ENTIRE text is just a single return statement with None
-    # This handles multi-line strings that only contain "return None"
-    lines = [line.strip() for line in stripped.split('\n') if line.strip()]
-    if len(lines) == 1 and lines[0].lower() in ("return none", "return null", "none", "null"):
-        return True
-    
-    # Also check for lines with only whitespace + return None
-    # e.g., "    return None" or "\treturn None"
-    if all(line.strip().lower() in ("return none", "return null", "none", "null", "") for line in text.split('\n')):
-        # Make sure at least one line has the return statement
-        if any(line.strip().lower() in ("return none", "return null") for line in text.split('\n')):
-            return True
-    
-    # Check for AI refusal patterns (these appear at START of text)
-    refusal_patterns = [
-        "i'm sorry",
-        "i need more",
-        "could you please",
-        "please provide",
-        "more specific",
-        "more information",
-        "i apologize",
-        "i cannot",
-    ]
-    for pattern in refusal_patterns:
-        if normalized.startswith(pattern):
-            return True
-    
-    # Check for stdin template code (these are very specific patterns)
-    if "sys.stdin.read" in text or "input(" in text:
-        # Only flag if it's clearly a template (has both import and read)
-        if "import sys" in text and "sys.stdin" in text:
-            return True
-    
-    # Check for completely unrelated helper functions
-    # These are signs of wrong code extraction
-    unrelated_patterns = [
-        "def is_sorted_recursive",  # Wrong function extracted
-        "def helper",
-        "def check_",
-    ]
-    for pattern in unrelated_patterns:
-        if pattern in text:
-            return True
-    
-    return False
-
-
-def _extract_param_names_from_prompt(prompt: str, entry_point: Optional[str]) -> List[str]:
-    sig = _extract_function_signature(prompt or "", entry_point)
-    if not sig:
-        return []
-    params = sig.get("parameters")
-    if not isinstance(params, list):
-        return []
-    return [str(p).strip() for p in params if str(p).strip()]
-
-
-def _auto_fix_parameter_consistency(completion: str, param_names: List[str], entry_point: Optional[str]) -> str:
-    if not completion or not param_names:
-        return completion
-
-    text = str(completion)
-    identifiers = set(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", text))
-    if not identifiers:
-        return text
-
-    if len(param_names) == 1:
-        target = param_names[0]
-        if target not in identifiers:
-            aliases = ["lst", "arr", "array", "nums", "values", "s", "string", "text", "sentence", "grid", "x"]
-            for alias in aliases:
-                if alias in identifiers and alias != target:
-                    text = re.sub(rf"\b{re.escape(alias)}\b", target, text)
-                    break
-
-    if len(param_names) == 2:
-        p1, p2 = param_names[0], param_names[1]
-        if p1 not in identifiers and p2 not in identifiers and "a" in identifiers and "b" in identifiers:
-            if p1 != "a":
-                text = re.sub(r"\ba\b", p1, text)
-            if p2 != "b":
-                text = re.sub(r"\bb\b", p2, text)
-
-    return _normalize_completion(text, entry_point)
-
-
-def _repair_builtin_shadowing_completion(
-    completion: str,
-    param_names: List[str],
-    entry_point: Optional[str],
-) -> str:
-    """
-    Fix common shadowing bug when a parameter name equals a builtin type name
-    (e.g. `def f(str): ... isinstance(str, str)`).
-    """
-    if not completion or not param_names:
-        return completion
-
-    text = str(completion)
-    type_expr_by_name: Dict[str, str] = {
-        "str": "type('')",
-        "int": "type(0)",
-        "float": "type(0.0)",
-        "bool": "type(True)",
-        "list": "type([])",
-        "dict": "type({})",
-        "tuple": "type(())",
-        "set": "type({1})",
-        "bytes": "type(b'')",
-    }
-
-    for name in param_names:
-        type_expr = type_expr_by_name.get(name)
-        if not type_expr:
-            continue
-        text = re.sub(
-            rf"\bisinstance\(\s*{re.escape(name)}\s*,\s*{re.escape(name)}\s*\)",
-            f"isinstance({name}, {type_expr})",
-            text,
-        )
-        text = re.sub(
-            rf"\btype\(\s*{re.escape(name)}\s*\)\s+is\s+{re.escape(name)}\b",
-            f"type({name}) is {type_expr}",
-            text,
-        )
-        text = re.sub(
-            rf"\btype\(\s*{re.escape(name)}\s*\)\s*==\s*{re.escape(name)}\b",
-            f"type({name}) == {type_expr}",
-            text,
-        )
-
-    return _normalize_completion(text, entry_point)
-
-
-def _has_irrelevant_top_level_def(text: str, entry_point: Optional[str]) -> bool:
-    """
-    Check only module top-level function definitions via AST.
-    Nested defs in function bodies are allowed.
-    """
-    if not text or not entry_point:
-        return False
-
-    candidate = _extract_code_block(str(text))
-    try:
-        tree = ast.parse(candidate)
-    except SyntaxError:
-        # Most function-body snippets are not parseable as a standalone module.
-        # In body mode we should not enforce entry_point naming.
-        return False
-
-    top_level_defs = [
-        node.name
-        for node in tree.body
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-    ]
-    if not top_level_defs:
-        return False
-    return entry_point not in top_level_defs
-
-
-def _score_completion_candidate(text: str, entry_point: Optional[str], param_names: List[str]) -> float:
-    if not text:
-        return -1e9
-    if _is_fallback(text):
-        return -1e9
-    if _has_irrelevant_top_level_def(text, entry_point):
-        return -1e6
-
-    cleaned = _normalize_completion(_strip_redundant_def(_extract_code_block(text), entry_point), entry_point)
-    if not cleaned.strip():
-        return -1e9
-
-    score = 0.0
-    wrapped = "def __candidate(" + (", ".join(param_names) if param_names else "a, b") + "):\n"
-    for line in cleaned.splitlines() or ["pass"]:
-        wrapped += ("    " + line if line.strip() else "    ") + "\n"
-
-    try:
-        tree = ast.parse(wrapped)
-        score += 3.0
-    except SyntaxError:
-        return -1e6
-
-    builtins_set = set(dir(builtins))
-    used_names: set[str] = set()
-    assigned_names: set[str] = set(param_names)
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Name):
-            if isinstance(node.ctx, ast.Load):
-                used_names.add(node.id)
-            else:
-                assigned_names.add(node.id)
-        elif isinstance(node, ast.FunctionDef):
-            assigned_names.add(node.name)
-        elif isinstance(node, ast.Import):
-            for alias in node.names:
-                assigned_names.add((alias.asname or alias.name).split(".")[0])
-        elif isinstance(node, ast.ImportFrom):
-            for alias in node.names:
-                assigned_names.add(alias.asname or alias.name)
-
-    unknown = {
-        name
-        for name in used_names
-        if name not in assigned_names and name not in builtins_set and not keyword.iskeyword(name)
-    }
-    score -= 1.5 * float(len(unknown))
-
-    if param_names:
-        used_param_count = sum(1 for p in param_names if p in used_names)
-        score += 2.0 * float(used_param_count)
-        if used_param_count == 0:
-            score -= 3.0
-    return score
-
-
-def _extract_code_from_results(
-    results: Dict[str, Any], entry_point: Optional[str], param_names: Optional[List[str]] = None
-) -> Optional[str]:
-    signature_params = [p for p in (param_names or []) if isinstance(p, str) and p.strip()]
-    def _is_irrelevant(text: str) -> bool:
-        return _has_irrelevant_top_level_def(text, entry_point)
-
-    def _normalize(value: Any) -> Optional[str]:
-        if value is None:
-            return None
-        if isinstance(value, str):
-            # Try to unwrap JSON-formatted strings
-            unwrapped = _unwrap_json_code(value)
-            result = unwrapped if unwrapped != value else value
-            # Skip if it's a fallback pattern
-            if result and not _is_fallback(result):
-                return result
-            return None
-        if isinstance(value, dict):
-            # CRITICAL: Skip if ok=False or has error
-            if value.get("ok") is False:
-                return None
-            # Check for tool-level fatal errors first
-            if "error" in value and _is_tool_error(value["error"]):
-                return None
-            if "error" in value and value["error"]:
-                return None
-            
-            # Only extract from successful tool executions with ok=True
-            if "ok" in value and value["ok"] is True:
-                # Look for code in output first
-                if "output" in value and isinstance(value["output"], dict):
-                    # Support nested output.output.code
-                    if "output" in value["output"] and isinstance(value["output"]["output"], dict):
-                        inner = value["output"]["output"]
-                        for key in ["code_or_commands", "code", "solution"]:
-                            if key in inner and isinstance(inner[key], str):
-                                code = inner[key]
-                                if code and code.strip() and not _is_fallback(code):
-                                    return _unwrap_json_code(code)
-                    for key in ["code_or_commands", "code", "solution"]:
-                        if key in value["output"] and isinstance(value["output"][key], str):
-                            code = value["output"][key]
-                            if code and code.strip() and not _is_fallback(code):
-                                return _unwrap_json_code(code)
-            
-            # Then check direct keys (for backward compatibility)
-            for key in ["code_or_commands", "code", "solution"]:
-                if key in value and isinstance(value[key], str):
-                    code = value[key]
-                    if code and code.strip() and not _is_fallback(code):
-                        return _unwrap_json_code(code)
-            
-            # Recurse into nested result
-            if "result" in value:
-                nested = _normalize(value.get("result"))
-                if nested:
-                    return nested
-        return None
-
-    def _gather_code_strings(obj: Any) -> List[str]:
-        collected: List[str] = []
-        if obj is None:
-            return collected
-        if isinstance(obj, list):
-            for item in obj:
-                collected.extend(_gather_code_strings(item))
-            return collected
-        if isinstance(obj, dict):
-            # Check if this is a tool execution result
-            has_error = "error" in obj and obj["error"]
-            has_ok = "ok" in obj
-            
-            # If it's a tool result with ok=True, prioritize it
-            if has_ok and obj.get("ok") is True and not has_error:
-                normalized = _normalize(obj)
-                if normalized and normalized.strip():
-                    collected.append(normalized)
-            # If it has error but also has output, try to extract
-            elif has_error and "output" in obj:
-                normalized = _normalize(obj)
-                if normalized and normalized.strip():
-                    collected.append(normalized)
-            # Otherwise, if no explicit error marker
-            elif not has_error and not has_ok:
-                normalized = _normalize(obj)
-                if normalized and normalized.strip():
-                    collected.append(normalized)
-            
-            # Recurse to find nested successes
-            for key, val in obj.items():
-                # Skip error fields themselves
-                if key != "error":
-                    collected.extend(_gather_code_strings(val))
-            return collected
-        # Ignore bare strings that are not under code-bearing keys to avoid picking reasons/log lines.
-        return collected
-
-    deep_strings = _gather_code_strings(results)
-
-    def _best_from_list(items: List[Any]) -> Optional[str]:
-        scored_codes: List[Tuple[float, int, str]] = []
-
-        for item_idx, item in enumerate(items):
-            # If item is a dict with ok=True, process it
-            if isinstance(item, dict):
-                # Skip if tool had fatal errors
-                if "error" in item and _is_tool_error(item["error"]):
-                    continue
-                # MUST have ok=True and no error
-                if item.get("ok") is True and not item.get("error"):
-                    # This is a successful tool output
-                    normalized = _normalize(item)
-                    if normalized and normalized.strip():
-                        # Skip fallback and irrelevant code
-                        if not _is_fallback(normalized) and not _is_irrelevant(normalized):
-                            score = _score_completion_candidate(normalized, entry_point, signature_params)
-                            scored_codes.append((score, item_idx, normalized))
-                # Skip anything that's not explicitly ok=True
-                continue
-
-            # Only try to extract from nested structures if not a dict with status
-            # (to avoid processing failed tool results)
-            if not isinstance(item, dict) or "ok" not in item:
-                texts = _gather_code_strings(item)
-                for text in texts:
-                    if text.strip():
-                        # Skip fallback and irrelevant code
-                        if not _is_fallback(text) and not _is_irrelevant(text):
-                            score = _score_completion_candidate(text, entry_point, signature_params)
-                            scored_codes.append((score, item_idx, text))
-
-        if not scored_codes:
-            return None
-        scored_codes.sort(key=lambda x: (x[0], x[1]), reverse=True)
-        return scored_codes[0][2]
-
-    candidates: List[str] = []
-    
-    # First, check if results directly contains tool_trace (common structure)
-    if "tool_trace" in results or "tool_exec" in results:
-        trace_key = "tool_trace" if "tool_trace" in results else "tool_exec"
-        tool_trace = results[trace_key]
-        if isinstance(tool_trace, dict):
-            # Prioritize builder role for code generation
-            for role in ["builder", "researcher", "planner", "tester", "refractor"]:
-                traces = tool_trace.get(role)
-                if isinstance(traces, list) and traces:
-                    # Extract all result objects from the trace list
-                    result_objs = []
-                    for trace in traces:
-                        if isinstance(trace, dict):
-                            result_obj = trace.get("result", {})
-                            if result_obj:
-                                result_objs.append(result_obj)
-                    
-                    # Use _best_from_list to find the best code from all results
-                    if result_objs:
-                        best_code = _best_from_list(result_objs)
-                        if best_code and best_code.strip():
-                            candidates.append(best_code)
-                    
-                    # If we found a candidate from builder, prefer it
-                    if candidates and role == "builder":
-                        break
-    
-    # Then try to extract from role-based results
-    if not candidates:
-        for role in ["builder", "planner", "researcher", "checker", "tester", "refractor"]:
-            payload = results.get(role)
-            if isinstance(payload, list) and payload:
-                text = _best_from_list(payload)
-            else:
-                text = _normalize(payload)
-            if text and text.strip() and not _is_fallback(text) and not _is_irrelevant(text):
-                candidates.append(text)
-
-    # If no candidates yet, search all results values (but skip metadata keys)
-    if not candidates:
-        for key, payload in results.items():
-            # Skip known non-code keys
-            if key in ["log_path", "topology", "tool_exec", "tool_trace", "selected_agents"]:
-                continue
-            if isinstance(payload, list) and payload:
-                text = _best_from_list(payload)
-            else:
-                text = _normalize(payload)
-            if text and text.strip() and not _is_fallback(text) and not _is_irrelevant(text):
-                candidates.append(text)
-
-    code = ""
-    if candidates:
-        scored_candidates: List[Tuple[float, int, str]] = []
-        for idx, candidate in enumerate(candidates):
-            if not _is_fallback(candidate) and not _is_irrelevant(candidate):
-                score = _score_completion_candidate(candidate, entry_point, signature_params)
-                scored_candidates.append((score, idx, candidate))
-        if scored_candidates:
-            scored_candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
-            code = scored_candidates[0][2]
-
-    # If we still landed on a fallback (e.g., only "return None" present), search deeper across all values.
-    if not code or _is_fallback(code):
-        scored_deep: List[Tuple[float, int, str]] = []
-        for idx, candidate in enumerate(deep_strings):
-            if not _is_fallback(candidate) and not _is_irrelevant(candidate):
-                score = _score_completion_candidate(candidate, entry_point, signature_params)
-                scored_deep.append((score, idx, candidate))
-        if scored_deep:
-            scored_deep.sort(key=lambda x: (x[0], x[1]), reverse=True)
-            code = scored_deep[0][2]
-    
-    if not code:
-        return None
-    
-    # Clean up the code: handle escaped newlines and JSON artifacts
-    code = code.replace("\\n", "\n").replace("\\t", "\t")
-    code = _extract_code_block(code)
-    code = _strip_redundant_def(code, entry_point)
-    code = _auto_fix_parameter_consistency(code, signature_params, entry_point)
-    code = _normalize_completion(code, entry_point)
-    return code.strip("\n")
-
-
 def _load_selections(log_path: Optional[str], registry) -> Dict[str, str]:
     if not log_path or not os.path.exists(log_path):
         return {}
@@ -836,7 +146,6 @@ def _load_selections(log_path: Optional[str], registry) -> Dict[str, str]:
     except Exception:
         return selections
     return selections
-
 
 def _auto_generate_solutions_orchestrator(
     tasks: List[dict],
@@ -1006,16 +315,16 @@ def _auto_generate_solutions_orchestrator(
             param_hint = ""
             if func_sig and func_sig.get("parameters"):
                 params = func_sig["parameters"]
-                param_hint = f"\n娉ㄦ剰: 鍑芥暟鍙傛暟鍚嶆槸: {', '.join(params)}. 蹇呴』鍦ㄤ唬鐮佷腑浣跨敤杩欎簺纭垏鐨勫弬鏁板悕!\n"
-            
+                param_hint = f"\nParameter names: {', '.join(params)}. Use these exact names in code.\n"
+
             task_text = (
                 f"{prompt}\n\n"
-                "璇峰湪 JSON 杈撳嚭涓妸瀹炵幇鍐欏叆 code_or_commands 瀛楁锛屼粎鍖呭惈鍙墽琛岀殑鍑芥暟浣撲唬鐮併€俓n"
-                "鍏抽敭瑕佹眰:\n"
-                "1. 蹇呴』浣跨敤鍑芥暟绛惧悕涓殑瀹為檯鍙傛暟鍚?涓嶈浣跨敤data/items/input_string绛夐€氱敤鍚峔n"
-                "2. 蹇呴』澶勭悊杈圭晫鎯呭喌: 绌鸿緭鍏?[], '', None), 鍗曞厓绱? 鐗规畩鍊?0, 1)\n"
-                "3. 鍙敓鎴愮洿鎺ヨВ鍐抽棶棰樼殑浠ｇ爜,涓嶈鐢熸垚鏃犲叧鐨勮В鏋?澶勭悊妯℃澘\n"
-                "4. 纭繚绠楁硶閫昏緫姝ｇ‘"
+                "Put the implementation in JSON field `code_or_commands` as runnable function-body code only.\n"
+                "Requirements:\n"
+                "1. Use exact parameter names from the function signature (no generic names like data/items/input_string).\n"
+                "2. Handle edge cases: empty input ([], '', None), single element, and boundary values (0, 1).\n"
+                "3. Generate direct solution code only; avoid unrelated parsing/template boilerplate.\n"
+                "4. Ensure the logic is correct.\n"
                 f"{param_hint}"
             )
 
@@ -1258,367 +567,12 @@ def _auto_generate_solutions_orchestrator(
 
     return solutions, meta
 
-
-def _build_program(
-    prompt: str, completion: str, test_code: str, entry_point: Optional[str] = None
-) -> str:
-    prompt_text = prompt or ""
-    completion_text = completion or ""
-    completion_text = _extract_code_block(completion_text)
-    completion_text = _strip_redundant_def(completion_text, entry_point)
-    completion_text = _normalize_completion(completion_text, entry_point)
-    if not completion_text.endswith("\n"):
-        completion_text += "\n"
-    return f"{prompt_text}{completion_text}\n{test_code}\n"
-
-
-def _looks_like_syntax_error(message: str) -> bool:
-    if not message:
-        return False
-    return any(token in message for token in ("SyntaxError", "IndentationError", "TabError"))
-
-
-def _looks_like_assertion_error(message: str) -> bool:
-    if not message:
-        return False
-    return "AssertionError" in message
-
-
-def _looks_like_name_scope_error(message: str) -> bool:
-    if not message:
-        return False
-    return ("NameError" in message) or ("UnboundLocalError" in message)
-
-
-def _extract_missing_symbol(message: str) -> Optional[str]:
-    if not message:
-        return None
-    m = re.search(r"NameError:\s+name '([A-Za-z_][A-Za-z0-9_]*)' is not defined", message)
-    if m:
-        return m.group(1)
-    m = re.search(
-        r"UnboundLocalError:\s+cannot access local variable '([A-Za-z_][A-Za-z0-9_]*)'",
-        message,
-    )
-    if m:
-        return m.group(1)
-    return None
-
-
-def _extract_assertion_hint(message: str) -> str:
-    if not message:
-        return ""
-    for line in message.splitlines():
-        if "assert candidate" in line:
-            return line.strip()
-    lines = [line.strip() for line in message.splitlines() if line.strip()]
-    return lines[-1] if lines else ""
-
-
-def _repair_assertion_completion_with_llm(
-    *,
-    llm_client: Any,
-    prompt: str,
-    completion: str,
-    test_code: str,
-    entry_point: Optional[str],
-    error_message: str,
-    max_tokens: int = 700,
-) -> Optional[str]:
-    if llm_client is None:
-        return None
-
-    assertion_hint = _extract_assertion_hint(error_message)
-    tests_preview = "\n".join((test_code or "").splitlines()[:80])
-    messages = [
-        {
-            "role": "user",
-            "content": (
-                f"{prompt or ''}\n\n"
-                f"Entry point: {entry_point or ''}\n\n"
-                "You are fixing a failing implementation.\n"
-                "Return ONLY raw function body code (no markdown, no explanation, no function signature).\n"
-                "Keep correct Python indentation for function body lines.\n"
-                "Do not output import/main/test code.\n\n"
-                f"Current implementation body:\n{completion or ''}\n\n"
-                f"Failing assertion/error hint:\n{assertion_hint}\n\n"
-                f"Reference tests (truncated):\n{tests_preview}\n"
-            ),
-        }
-    ]
-    try:
-        repaired = llm_client.chat(messages, temperature=0.1, max_tokens=max_tokens)
-    except Exception:
-        return None
-
-    repaired = _extract_code_block(str(repaired))
-    repaired = _strip_redundant_def(repaired, entry_point)
-    repaired = _normalize_completion(repaired, entry_point)
-    repaired = repaired.strip("\n")
-    if not repaired or _is_fallback(repaired):
-        return None
-    return repaired
-
-
-def _repair_test_entry_point_alias(
-    test_code: str,
-    missing_symbol: Optional[str],
-    entry_point: Optional[str],
-) -> Optional[str]:
-    """
-    When tests call a stale/wrong function name, rewrite it to the active entry point.
-    """
-    symbol = (missing_symbol or "").strip()
-    if not test_code or not symbol or not entry_point or symbol == entry_point:
-        return None
-    pattern = rf"\b{re.escape(symbol)}\s*\("
-    if not re.search(pattern, test_code):
-        return None
-    repaired = re.sub(pattern, f"{entry_point}(", test_code)
-    return repaired if repaired != test_code else None
-
-
-def _repair_completion(completion: str, entry_point: Optional[str]) -> str:
-    text = str(completion or "")
-    text = text.replace("\r\n", "\n")
-    text = _extract_code_block(text)
-    text = text.expandtabs(4)
-    text = _strip_redundant_def(text, entry_point)
-    lines = [line for line in text.splitlines() if not line.strip().startswith("```")]
-    text = "\n".join(lines)
-    text = textwrap.dedent(text).strip("\n")
-    if entry_point:
-        lines = text.splitlines()
-        lines = [("    " + line) if line.strip() else line for line in lines]
-        text = "\n".join(lines)
-    return text
-
-
-def _repair_name_scope_completion(
-    completion: str,
-    entry_point: Optional[str],
-    missing_symbol: Optional[str],
-    param_names: List[str],
-) -> str:
-    text = _repair_completion(completion, entry_point)
-    text = _auto_fix_parameter_consistency(text, param_names, entry_point)
-    text = _repair_builtin_shadowing_completion(text, param_names, entry_point)
-
-    symbol = (missing_symbol or "").strip()
-    if not symbol:
-        return text
-
-    module_symbols = {"math", "heapq", "itertools", "re", "collections", "functools"}
-    if symbol in module_symbols and f"import {symbol}" not in text:
-        import_line = f"    import {symbol}" if entry_point else f"import {symbol}"
-        text = import_line + "\n" + text
-
-    # Missing symbol may be a function/class from a known module.
-    symbol_imports: Dict[str, str] = {
-        "heappush": "from heapq import heappush, heappop",
-        "heappop": "from heapq import heappush, heappop",
-        "deque": "from collections import deque",
-        "defaultdict": "from collections import defaultdict",
-        "Counter": "from collections import Counter",
-        "ceil": "from math import ceil",
-        "sqrt": "from math import sqrt",
-    }
-    import_stmt = symbol_imports.get(symbol)
-    if import_stmt and import_stmt not in text:
-        prefix = f"    {import_stmt}" if entry_point else import_stmt
-        text = prefix + "\n" + text
-
-    helper_templates: Dict[str, str] = {
-        "is_prime": (
-            "    def is_prime(n):\n"
-            "        if n <= 1:\n"
-            "            return False\n"
-            "        for i in range(2, int(n ** 0.5) + 1):\n"
-            "            if n % i == 0:\n"
-            "                return False\n"
-            "        return True\n"
-        ),
-        "convert_to_float": (
-            "    def convert_to_float(value):\n"
-            "        if isinstance(value, str):\n"
-            "            value = value.replace(',', '.')\n"
-            "        try:\n"
-            "            return float(value)\n"
-            "        except (ValueError, TypeError):\n"
-            "            return None\n"
-        ),
-    }
-    if symbol in helper_templates and f"def {symbol}" not in text and f"{symbol}(" in text:
-        text = helper_templates[symbol] + text
-
-    # Common malformed snippet: helper body for `value` leaked out of function def.
-    if symbol == "value":
-        lines = text.splitlines()
-        while lines and not lines[0].strip():
-            lines.pop(0)
-        if lines and lines[0].strip().startswith("if isinstance(value"):
-            cut = 0
-            for i, line in enumerate(lines):
-                cut = i
-                if line.strip() == "" and i > 0:
-                    break
-            lines = lines[cut + 1 :]
-            text = "\n".join(lines).lstrip("\n")
-        if ("convert_to_float(" in text or "float(value)" in text or "value.replace" in text) and "def convert_to_float" not in text:
-            text = helper_templates["convert_to_float"] + text
-
-    return text
-
-
-def _repair_timeout_completion(
-    completion: str,
-    entry_point: Optional[str],
-    param_names: List[str],
-) -> str:
-    """
-    Heuristic timeout mitigation without external LLM:
-    - normalize to function-body format
-    - add a loop-iteration guard for `while heap:` patterns
-    - replace obvious exhaustive `continue` at length-hit with `break`
-    """
-    text = _repair_completion(completion, entry_point)
-    text = _auto_fix_parameter_consistency(text, param_names, entry_point)
-
-    if not text:
-        return text
-
-    # Guard potentially explosive heap-expansion loops.
-    if "while heap" in text and "__iter_limit" not in text:
-        prefix = "    __iter_guard = 0\n    __iter_limit = 50000\n" if entry_point else "__iter_guard = 0\n__iter_limit = 50000\n"
-        text = prefix + text
-        text = re.sub(
-            r"(?m)^(\s*)while\s+heap\s*:\s*$",
-            r"\1while heap and __iter_guard < __iter_limit:\n\1    __iter_guard += 1",
-            text,
-        )
-
-    # Common exhaustive branch in path-search code.
-    text = re.sub(
-        r"(?m)^(\s*if\s+len\(\s*path\s*\)\s*==\s*k\s*:\s*(?:\n(?:\s+.*))*?\n)(\s*)continue\s*$",
-        r"\1\2break",
-        text,
-    )
-
-    return text
-
-
-def _run_with_repair(
-    prompt: str,
-    completion: str,
-    test_code: str,
-    entry_point: Optional[str],
+def evaluate(
+    tasks_path: str,
+    solutions_path: Optional[str],
     timeout_s: float,
-) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
-    param_names = _extract_param_names_from_prompt(prompt, entry_point)
-    completion_text = _auto_fix_parameter_consistency(str(completion), param_names, entry_point)
-    completion_text = _repair_builtin_shadowing_completion(completion_text, param_names, entry_point)
-
-    code = _build_program(prompt, completion_text, test_code, entry_point)
-    ok, message = _run_python(code, timeout_s=timeout_s)
-    if ok:
-        if completion_text != str(completion):
-            return True, "", {"attempted": True, "success": True, "repair_type": "param_consistency"}
-        return True, "", None
-
-    syntax_repair_info: Optional[Dict[str, Any]] = None
-    if _looks_like_syntax_error(message):
-        repaired = _repair_completion(completion_text, entry_point)
-        if repaired and repaired != completion_text:
-            repaired_code = _build_program(prompt, repaired, test_code, entry_point)
-            ok2, message2 = _run_python(repaired_code, timeout_s=timeout_s)
-            syntax_repair_info = {
-                "attempted": True,
-                "success": ok2,
-                "repair_type": "syntax_indent",
-                "original_error": message,
-            }
-            if ok2:
-                return True, "", syntax_repair_info
-            syntax_repair_info["final_error"] = message2
-            completion_text = repaired
-            message = message2
-
-    if _looks_like_name_scope_error(message):
-        missing = _extract_missing_symbol(message)
-
-        repaired_test = _repair_test_entry_point_alias(test_code, missing, entry_point)
-        if repaired_test:
-            alias_code = _build_program(prompt, completion_text, repaired_test, entry_point)
-            ok_alias, message_alias = _run_python(alias_code, timeout_s=timeout_s)
-            alias_repair_info = {
-                "attempted": True,
-                "success": ok_alias,
-                "repair_type": "test_entry_alias",
-                "missing_symbol": missing,
-                "original_error": message,
-            }
-            if ok_alias:
-                return True, "", alias_repair_info
-            alias_repair_info["final_error"] = message_alias
-
-        repaired = _repair_name_scope_completion(completion_text, entry_point, missing, param_names)
-        if repaired and repaired != completion_text:
-            repaired_code = _build_program(prompt, repaired, test_code, entry_point)
-            ok3, message3 = _run_python(repaired_code, timeout_s=timeout_s)
-            repair_info = {
-                "attempted": True,
-                "success": ok3,
-                "repair_type": "name_or_scope",
-                "missing_symbol": missing,
-                "original_error": message,
-            }
-            if not ok3:
-                repair_info["final_error"] = message3
-            return ok3, ("" if ok3 else message3), repair_info
-
-    if message.strip().lower() == "timeout":
-        repaired = _repair_timeout_completion(completion_text, entry_point, param_names)
-        if repaired and repaired != completion_text:
-            repaired_code = _build_program(prompt, repaired, test_code, entry_point)
-            ok4, message4 = _run_python(repaired_code, timeout_s=timeout_s)
-            repair_info = {
-                "attempted": True,
-                "success": ok4,
-                "repair_type": "timeout_guard",
-                "original_error": message,
-            }
-            if not ok4:
-                repair_info["final_error"] = message4
-            return ok4, ("" if ok4 else message4), repair_info
-
-    if syntax_repair_info is not None:
-        return False, message, syntax_repair_info
-    return False, message, None
-
-
-def _run_python(code: str, timeout_s: float) -> Tuple[bool, str]:
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        path = os.path.join(tmp_dir, "eval_task.py")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(code)
-        try:
-            result = subprocess.run(
-                [sys.executable, path],
-                capture_output=True,
-                text=True,
-                timeout=timeout_s,
-            )
-        except subprocess.TimeoutExpired:
-            return False, "timeout"
-    if result.returncode == 0:
-        return True, ""
-    stderr = result.stderr.strip()
-    stdout = result.stdout.strip()
-    message = stderr or stdout or f"exit_code={result.returncode}"
-    return False, message
-
-
-def evaluate(tasks_path: str, solutions_path: Optional[str], timeout_s: float) -> Dict[str, object]:
+    postprocess_rounds: int = 1,
+) -> Dict[str, object]:
     tasks = _load_jsonl(tasks_path)
     solutions = _load_solutions(solutions_path)
     passed = 0
@@ -1631,23 +585,23 @@ def evaluate(tasks_path: str, solutions_path: Optional[str], timeout_s: float) -
         completion = task.get("completion")
         if completion is None:
             completion = solutions.get(str(name), "")
-        ok, message, repair_info = _run_with_repair(
+        ok, message, postprocess_info = _evaluate_with_postprocess_check(
             prompt,
             str(completion),
             test_code,
             entry_point,
             timeout_s=timeout_s,
+            max_postprocess_rounds=postprocess_rounds,
         )
         if ok:
             passed += 1
         record = {"name": name, "ok": ok, "error": message}
-        if repair_info:
-            record["repair"] = repair_info
+        if postprocess_info:
+            record["postprocess_check"] = postprocess_info
         results.append(record)
     total = len(results)
     pass_rate = passed / total if total else 0.0
     return {"total": total, "passed": passed, "pass_rate": pass_rate, "results": results}
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate HumanEval-style tasks")
@@ -1696,6 +650,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include_tool_trace", action="store_true")
     parser.add_argument("--tool_only", action="store_true", help="use tools only; no LLM generation")
     parser.add_argument("--tool_timeout", type=float, default=5.0, help="tool execution timeout seconds")
+    parser.add_argument(
+        "--postprocess_rounds",
+        type=int,
+        default=1,
+        help="postprocess repair rounds after initial failure",
+    )
     parser.add_argument("--mcts_dynamic_optimization", action="store_true")
     parser.add_argument("--mcts_iterations", type=int, default=64)
     parser.add_argument("--mcts_rollout_depth", type=int, default=4)
@@ -1747,12 +707,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--force_role", default="", type=str, help="force all queries to use this role (skip Router)")
     return parser.parse_args()
 
-
 def _iter_progress(items: List[dict], desc: str):
     if tqdm is None:
         return items
     return tqdm(items, desc=desc, total=len(items))
-
 
 def main() -> None:
     args = parse_args()
@@ -1764,6 +722,9 @@ def main() -> None:
         args.baseline_fixed_bcb_router_gpt4o = False
 
     tasks = _load_jsonl(args.tasks)
+    effective_postprocess_rounds = args.postprocess_rounds
+    if (args.mcts_dynamic_optimization or args.baseline_fixed_bcb_mcts) and effective_postprocess_rounds < 2:
+        effective_postprocess_rounds = 2
     solutions_path = args.solutions or None
     if not solutions_path and args.out:
         out_path = Path(args.out)
@@ -1885,12 +846,13 @@ def main() -> None:
         completion = task.get("completion")
         if completion is None:
             completion = solutions.get(str(name), "")
-        ok, message, repair_info = _run_with_repair(
+        ok, message, postprocess_info = _evaluate_with_postprocess_check(
             prompt,
             str(completion),
             test_code,
             entry_point,
             timeout_s=args.timeout,
+            max_postprocess_rounds=effective_postprocess_rounds,
         )
         if ok:
             passed += 1
@@ -1898,8 +860,8 @@ def main() -> None:
         meta = meta_by_task.get(str(name))
         if meta:
             record.update(meta)
-        if repair_info:
-            record["repair"] = repair_info
+        if postprocess_info:
+            record["postprocess_check"] = postprocess_info
         results.append(record)
     total = len(results)
     pass_rate = passed / total if total else 0.0
@@ -1911,7 +873,6 @@ def main() -> None:
             os.makedirs(out_dir, exist_ok=True)
         with open(args.out, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=True, indent=2)
-
 
 if __name__ == "__main__":
     main()
