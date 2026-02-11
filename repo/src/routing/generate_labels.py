@@ -2,6 +2,8 @@ import json
 import argparse
 import os
 import sys
+import ast
+import re
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -17,6 +19,35 @@ def _parse_list(value: str) -> List[str]:
     if not value:
         return []
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _extract_first_function_from_code(code: str) -> Any:
+    if not code:
+        return None
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            return node
+    return None
+
+
+def _extract_entry_point_from_code(code: str) -> str:
+    fn = _extract_first_function_from_code(code)
+    if fn is not None:
+        return fn.name
+    m = re.search(r"def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", code or "")
+    return m.group(1) if m else ""
+
+
+def _extract_entry_point_from_tests(test_list: List[Any]) -> str:
+    for test in test_list:
+        m = re.search(r"assert\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", str(test))
+        if m:
+            return m.group(1)
+    return ""
 
 
 def get_system_prompt(strategy: str = "single_preference") -> str:
@@ -186,7 +217,7 @@ def _normalize_topology_label(label: Dict[str, Any], available_roles: List[str])
         "max_steps": int(max_steps) if max_steps else 1,
     }
 
-def load_humaneval_problems(file_paths: List[str]) -> List[Dict[str, Any]]:
+def load_problems(file_paths: List[str], dataset: str = "humaneval") -> List[Dict[str, Any]]:
     problems = []
     for path in file_paths:
         with open(path, 'r', encoding='utf-8') as f:
@@ -194,16 +225,34 @@ def load_humaneval_problems(file_paths: List[str]) -> List[Dict[str, Any]]:
                 if not line.strip(): continue
                 try:
                     data = json.loads(line)
-                    # Normalize fields
-                    prompt_text = data.get("prompt", "")
                     task_id = data.get("task_id", "") or data.get("name", "")
-                    entry_point = data.get("entry_point", "")
-                    
+                    prompt_text = ""
+                    entry_point = ""
+                    tests_preview = ""
+
+                    if dataset == "mbpp":
+                        prompt_text = str(data.get("text") or data.get("prompt") or "")
+                        code_text = str(data.get("code") or "")
+                        test_list = data.get("test_list") or []
+                        entry_point = (
+                            str(data.get("entry_point") or "")
+                            or _extract_entry_point_from_tests(test_list if isinstance(test_list, list) else [])
+                            or _extract_entry_point_from_code(code_text)
+                        )
+                        if isinstance(test_list, list) and test_list:
+                            tests_preview = "\n".join([str(x) for x in test_list[:3]])
+                    else:
+                        # humaneval
+                        prompt_text = str(data.get("prompt") or "")
+                        entry_point = str(data.get("entry_point") or "")
+
                     if prompt_text:
                         problems.append({
                             "task_id": task_id,
                             "prompt": prompt_text,
                             "entry_point": entry_point,
+                            "tests_preview": tests_preview,
+                            "dataset": dataset,
                             "original_data": data
                         })
                 except json.JSONDecodeError:
@@ -216,6 +265,7 @@ def generate_labels(
     model: str,
     available_roles: List[str],
     strategy: str = "single_preference",
+    dataset: str = "humaneval",
 ):
     # Initialize Client (Start your stronger model here, e.g. GPT-4)
     # Ensure LLM_API_KEY and LLM_BASE_URL are set in environment
@@ -232,6 +282,8 @@ def generate_labels(
             task_text = f"Task: {prob['prompt']}"
             if prob['entry_point']:
                 task_text += f"\nEntry point: {prob['entry_point']}"
+            if prob.get("tests_preview"):
+                task_text += f"\nTests (preview):\n{prob['tests_preview']}"
 
             messages = [
                 {"role": "system", "content": system_prompt},
@@ -262,7 +314,7 @@ def generate_labels(
                         {"role": "user", "content": task_text},
                         {"role": "assistant", "content": json.dumps(label_json, ensure_ascii=False)}
                     ],
-                    "sample_type": "humaneval_teacher_distilled",
+                    "sample_type": f"{dataset}_teacher_distilled",
                     "origin_task_id": prob['task_id']
                 }
 
@@ -278,9 +330,16 @@ def generate_labels(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate Router Labels using a Teacher LLM")
-    parser.add_argument("--data", type=str, required=True, help="Path to HumanEval file (e.g. Humaneval.jsonl)")
+    parser.add_argument("--data", type=str, required=True, help="Path to dataset JSONL (HumanEval/MBPP)")
     parser.add_argument("--output", type=str, default="humaneval_router_labels.jsonl")
     parser.add_argument("--model", type=str, default="gpt-4o", help="Teacher model name")
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="humaneval",
+        choices=["humaneval", "mbpp"],
+        help="Input dataset format.",
+    )
     parser.add_argument(
         "--roles",
         type=str,
@@ -301,6 +360,6 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    probs = load_humaneval_problems([args.data])
+    probs = load_problems([args.data], dataset=args.dataset)
     roles = [role.lower() for role in _parse_list(args.roles)]
-    generate_labels(probs, args.output, args.model, roles, args.strategy)
+    generate_labels(probs, args.output, args.model, roles, args.strategy, dataset=args.dataset)

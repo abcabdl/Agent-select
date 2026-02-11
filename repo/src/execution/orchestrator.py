@@ -205,6 +205,10 @@ class RealLLMClient:
             json.dumps(tool_history, ensure_ascii=True, default=str), max_chars=1200
         )
         tools_text = _truncate_text(json.dumps(available_tools, ensure_ascii=True, default=str), max_chars=1200)
+        diagnostics = context.get("diagnostics") or {}
+        diagnostics_text = _truncate_text(
+            json.dumps(diagnostics, ensure_ascii=True, default=str), max_chars=1200
+        )
 
         # In decentralized topology, agents can specify next_role
         if is_decentralized and role_key != "manager":
@@ -237,6 +241,7 @@ class RealLLMClient:
             f"Available roles: {json.dumps(context.get('available_roles') or [], ensure_ascii=True)}\n"
             f"Available tools: {tools_text}\n"
             f"Tool history: {tool_history_text}\n"
+            f"Diagnostics: {diagnostics_text}\n"
             f"Schema:\n{schema_text}\n"
             f"Guidance: {schema.get('guidance','')}\n"
         )
@@ -285,6 +290,10 @@ class RealLLMClient:
             json.dumps(tool_history, ensure_ascii=True, default=str), max_chars=1200
         )
         tools_text = _truncate_text(json.dumps(tools, ensure_ascii=True, default=str), max_chars=1200)
+        diagnostics = context.get("diagnostics") or {}
+        diagnostics_text = _truncate_text(
+            json.dumps(diagnostics, ensure_ascii=True, default=str), max_chars=1200
+        )
 
         system_msg = (
             "You are an intelligent tool-using controller. Analyze the task and tool history to select the BEST tool for the job. "
@@ -333,6 +342,7 @@ class RealLLMClient:
             f"Upstream outputs: {json.dumps(upstream, ensure_ascii=True)}\n"
             f"Available tools: {tools_text}\n"
             f"Tool history: {tool_history_text}\n"
+            f"Diagnostics: {diagnostics_text}\n"
             f"{failure_analysis}"
             "If no tool is needed, choose action='final'."
         )
@@ -557,6 +567,29 @@ def _truncate_text(text: Optional[str], max_chars: int) -> str:
     if len(value) <= max_chars:
         return value
     return value[: max_chars - 3] + "..."
+
+
+def _append_diagnostics_to_task(task_text: str, role_context: Dict[str, Any]) -> str:
+    diagnostics = role_context.get("diagnostics") or {}
+    if not diagnostics:
+        return task_text
+    if "Diagnostics:" in task_text:
+        return task_text
+
+    error_message = diagnostics.get("error_message") or ""
+    test_error = diagnostics.get("test_error") or ""
+    failed_code = diagnostics.get("failed_code") or ""
+
+    lines = ["Diagnostics:"]
+    if error_message:
+        lines.append(f"Error: {_truncate_text(error_message, max_chars=500)}")
+    if test_error and test_error != error_message:
+        lines.append(f"Test error: {_truncate_text(test_error, max_chars=500)}")
+    if failed_code:
+        lines.append("Failed code:")
+        lines.append(_truncate_text(str(failed_code), max_chars=1200))
+
+    return f"{task_text}\n\n" + "\n".join(lines)
 
 
 def _ensure_role_constraints(constraints: Optional[Dict[str, Any]], role: str) -> Dict[str, Any]:
@@ -1384,6 +1417,7 @@ def _plan_and_run_tools(
     last_error = None  # Track the last error message
     last_test_error = None  # Track the last test failure message
     consecutive_same_category_failures = 0  # Track consecutive failures in same category
+    consecutive_failures = 0  # Track consecutive failures across tools
     
     # Early stopping detection
     last_code_length = None
@@ -1478,8 +1512,9 @@ def _plan_and_run_tools(
             exec_inputs["task_context"] = task_context
         
         # Pass failed code and error to next tool for refinement
-        if failed_code and last_error:
-            exec_inputs["failed_code"] = failed_code
+        if last_error:
+            if failed_code:
+                exec_inputs["failed_code"] = failed_code
             exec_inputs["error_message"] = last_error
             
             # Build detailed diagnostic message
@@ -1492,7 +1527,7 @@ def _plan_and_run_tools(
                 error_lower = last_test_error.lower()
                 
                 # Type checking issues - be very aggressive about isinstance(x, int) bug
-                if "isinstance" in failed_code and "int" in failed_code:
+                if failed_code and "isinstance" in failed_code and "int" in failed_code:
                     if "5.0" in last_test_error or "float" in error_lower or "assertionerror" in error_lower:
                         diagnostic_hints.append(
                             "❌ TYPE CHECK ERROR: Using isinstance(x, int) filters out floats like 5.0 that are mathematically integers.\n"
@@ -1540,21 +1575,28 @@ def _plan_and_run_tools(
                     refinement_parts.append("\n💡 SPECIFIC ISSUES IDENTIFIED:")
                     refinement_parts.extend(f"\n{hint}" for hint in diagnostic_hints)
                 
+                failure_code_text = failed_code or "(no code)"
                 refinement_parts.append(
-                    f"\n\n❌ Failed Code:\n{failed_code}\n"
+                    f"\n\n❌ Failed Code:\n{failure_code_text}\n"
                     f"\n⚠️ CRITICAL: Do NOT repeat the same logic error. "
                     f"Analyze the error carefully and implement a DIFFERENT approach to fix it."
                 )
                 
                 exec_inputs["refinement_request"] = "\n".join(refinement_parts)
             else:
+                failure_code_text = failed_code or "(no code)"
                 exec_inputs["refinement_request"] = (
                     f"🔍 PREVIOUS ATTEMPT FAILED:\n"
                     f"Error: {last_error}\n\n"
-                    f"❌ Failed Code:\n{failed_code}\n\n"
+                    f"❌ Failed Code:\n{failure_code_text}\n\n"
                     f"⚠️ Please fix the error above and generate corrected code."
                 )
             
+            refinement_request = exec_inputs.get("refinement_request")
+            if refinement_request:
+                exec_inputs["task"] = f"{task_text}\n\n{refinement_request}"
+                exec_inputs["query"] = exec_inputs["task"]
+
             # Force tool diversity after consecutive failures
             # NOTE: Only switches within current agent's available tools (tool_ids is from agent_context)
             if consecutive_same_category_failures >= 3:
@@ -1723,6 +1765,7 @@ def _plan_and_run_tools(
                                     last_error = None
                                     last_test_error = None
                                     role_context["test_passed"] = True
+                                    role_context.pop("diagnostics", None)
                                     
                                     print(f"[DEBUG] Test PASSED! Stopping immediately at round {round_idx}", file=sys.stderr)
                                     
@@ -1744,6 +1787,11 @@ def _plan_and_run_tools(
                                     failed_code = code
                                     last_error = f"Test failed: {test_error}"
                                     last_test_error = test_error
+                                    role_context["diagnostics"] = {
+                                        "test_error": test_error,
+                                        "error_message": last_error,
+                                        "failed_code": code,
+                                    }
                                     # Track failure count for this tool and category
                                     tool_failure_counts[tool_id] = tool_failure_counts.get(tool_id, 0) + 1
                                     tool_category_counts[tool_category] = tool_category_counts.get(tool_category, 0) + 1
@@ -1751,6 +1799,50 @@ def _plan_and_run_tools(
                                     
                                     print(f"[DEBUG] Test FAILED: {test_error[:200]}, retrying...", file=sys.stderr)
                                     print(f"[DEBUG] Tool category '{tool_category}' failures: {tool_category_counts[tool_category]}, consecutive: {consecutive_same_category_failures}", file=sys.stderr)
+                                    
+                                    repair_llm = _resolve_repair_llm(llm, tool_executor)
+                                    post_ok, post_error, post_code = _postprocess_tool_failure(
+                                        code,
+                                        task_context,
+                                        test_error,
+                                        repair_llm,
+                                        timeout_s=5.0,
+                                    )
+                                    if post_ok:
+                                        successful_code = post_code
+                                        test_passed = True
+                                        has_errors = False
+                                        failed_code = None
+                                        last_error = None
+                                        last_test_error = None
+                                        role_context["test_passed"] = True
+                                        role_context.pop("diagnostics", None)
+                                        
+                                        print(
+                                            f"[DEBUG] Postprocess+LLM repair fixed tool {tool_id} at round {round_idx}",
+                                            file=sys.stderr,
+                                        )
+                                        
+                                        tool_history.append(
+                                            {
+                                                "tool_id": tool_id,
+                                                "input": tool_input,
+                                                "result": tool_result,
+                                                "reason": decision.get("reason") or ("tool_only_forced" if forced else None),
+                                            }
+                                        )
+                                        if tool_history:
+                                            role_context["tool_history"] = tool_history
+                                        return tool_history
+                                    else:
+                                        failed_code = post_code or failed_code
+                                        last_error = f"Postprocess failed: {post_error}"
+                                        last_test_error = post_error
+                                        role_context["diagnostics"] = {
+                                            "test_error": post_error,
+                                            "error_message": last_error,
+                                            "failed_code": failed_code,
+                                        }
                             else:
                                 # No test available, accept code based on success flag
                                 # Mark as successful but continue to allow LLM to decide when to stop
@@ -1771,7 +1863,25 @@ def _plan_and_run_tools(
                         has_errors = True
                         if not success_flag and inner_output:
                             last_error = inner_output.get("error") or "Tool returned success=false"
-        
+
+        if has_errors:
+            consecutive_failures += 1
+        else:
+            consecutive_failures = 0
+
+        if has_errors and (last_error or failed_code or last_test_error):
+            diagnostics_payload = {
+                "error_message": last_error,
+                "test_error": last_test_error,
+                "failed_code": failed_code,
+            }
+            role_context["diagnostics"] = {k: v for k, v in diagnostics_payload.items() if v}
+
+        if tool_only and role.strip().lower() == "builder" and consecutive_failures >= 3:
+            role_context["allow_llm_once"] = True
+            role_context["allow_llm_reason"] = "consecutive tool failures"
+            role_context["stop_tool_loop"] = True
+
         # Track last tool category for next iteration
         last_tool_category = tool_category
         
@@ -1802,7 +1912,10 @@ def _plan_and_run_tools(
                     "reason": decision.get("reason") or ("tool_only_forced" if forced else None),
                 }
             )
-        
+
+        if role_context.get("stop_tool_loop"):
+            break
+
         # Stop conditions:
         # 1. Got successful code AND no errors AND not forced to use all tools
         # 2. OR reached max rounds (removed the "tried all tools" condition to allow refinement)
@@ -2058,6 +2171,78 @@ def _test_code(code: str, task_context: Optional[Dict[str, Any]], timeout_s: flo
     return ok, message
 
 
+def _resolve_repair_llm(llm: Any, tool_executor: Optional[ToolExecutor]) -> Optional[Any]:
+    if tool_executor is not None:
+        tool_llm = getattr(tool_executor, "llm", None)
+        if tool_llm is not None:
+            return tool_llm
+    if hasattr(llm, "llm"):
+        inner = getattr(llm, "llm", None)
+        if inner is not None:
+            return inner
+    if hasattr(llm, "chat"):
+        return llm
+    return None
+
+
+def _postprocess_tool_failure(
+    code: str,
+    task_context: Optional[Dict[str, Any]],
+    error_message: str,
+    llm_client: Optional[Any],
+    timeout_s: float = 5.0,
+) -> Tuple[bool, str, str]:
+    if not task_context:
+        return False, error_message, code
+
+    prompt = task_context.get("prompt", "")
+    test_code = task_context.get("test", "")
+    entry_point = task_context.get("entry_point")
+    stop_tokens = task_context.get("stop_tokens") or []
+
+    if not test_code:
+        return False, error_message, code
+
+    candidate = str(code or "")
+    try:
+        from evaluation import humaneval_postprocess as _hp
+
+        param_names = _hp._extract_param_names_from_prompt(prompt, entry_point)
+        repaired_text, _ = _hp._run_postprocess_tool_agent(
+            completion=candidate,
+            prompt=prompt,
+            entry_point=entry_point,
+            stop_tokens=stop_tokens,
+            use_stop_tokens=bool(stop_tokens),
+            param_names=param_names,
+            enable_syntax_repair=True,
+            error_message=error_message,
+        )
+        if repaired_text and str(repaired_text).strip():
+            candidate = str(repaired_text)
+        candidate = _hp._normalize_completion(
+            _hp._strip_redundant_def(_hp._extract_code_block(candidate), entry_point),
+            entry_point,
+        )
+        candidate = _hp._fix_missing_indents(candidate)
+        if llm_client is not None:
+            repaired_llm = _hp._repair_assertion_completion_with_llm(
+                llm_client=llm_client,
+                prompt=prompt,
+                completion=candidate,
+                test_code=test_code,
+                entry_point=entry_point,
+                error_message=error_message,
+            )
+            if repaired_llm and str(repaired_llm).strip():
+                candidate = repaired_llm
+    except Exception:
+        pass
+
+    ok, message = _run_with_repair(prompt, candidate, test_code, entry_point, timeout_s=timeout_s)
+    return ok, message, candidate
+
+
 def _summarize_tool_history(tool_history: List[Dict[str, Any]]) -> List[str]:
     summaries: List[str] = []
     for entry in tool_history:
@@ -2243,6 +2428,7 @@ def _execute_role_with_selection(
         print(f"[ERROR] No agent selected for role '{role}'! selection={selection}", file=sys.stderr)
 
     attempt = 0
+    role_key = role.strip().lower()
     role_context: Dict[str, Any] = {"upstream": results, "constraints": constraints}
     agent_context = _get_agent_context(registry, selected_main)
     role_context["agent"] = agent_context
@@ -2304,6 +2490,78 @@ def _execute_role_with_selection(
         }
 
     if tool_only:
+        if role_key == "builder" and role_context.get("allow_llm_once"):
+            role_context.pop("allow_llm_once", None)
+            llm_task_text = _append_diagnostics_to_task(task_text, role_context)
+            output = llm.generate(role, llm_task_text, role_context)
+            valid, errors, model = validate_output(role, output, allow_unknown=allow_unknown_roles)
+            if valid:
+                if model is not None:
+                    stored_output = model.model_dump()
+                elif isinstance(output, dict):
+                    stored_output = output
+                else:
+                    stored_output = {"raw": output}
+                if task_context:
+                    code_text = stored_output.get("code_or_commands") if isinstance(stored_output, dict) else ""
+                    if isinstance(code_text, str) and code_text.strip():
+                        test_ok, test_error = _test_code(code_text, task_context)
+                        if test_ok:
+                            stored_output["test_passed"] = True
+                            log_path = write_event(
+                                task_id=task_id,
+                                workflow_version=workflow_version,
+                                role=role,
+                                selected_main=selected_main,
+                                selected_shadow=selected_shadow,
+                                candidates_topk=reranked,
+                                output=output,
+                                validation={"ok": True, "errors": []},
+                                executor_result=tool_history or None,
+                                failure_type=None,
+                                action="tool_only_llm_fallback",
+                                meta=meta,
+                                runs_dir=runs_dir,
+                            )
+                            return {
+                                "output": stored_output,
+                                "raw_output": output,
+                                "executor_result": tool_history or None,
+                                "log_path": log_path,
+                                "selected_main": selected_main,
+                                "selected_shadows": selection.get("selected_shadows", []),
+                            }
+                        role_context["diagnostics"] = {
+                            "test_error": test_error,
+                            "error_message": f"Test failed: {test_error}",
+                            "failed_code": code_text,
+                        }
+                else:
+                    code_text = stored_output.get("code_or_commands") if isinstance(stored_output, dict) else ""
+                    if isinstance(code_text, str) and code_text.strip():
+                        log_path = write_event(
+                            task_id=task_id,
+                            workflow_version=workflow_version,
+                            role=role,
+                            selected_main=selected_main,
+                            selected_shadow=selected_shadow,
+                            candidates_topk=reranked,
+                            output=output,
+                            validation={"ok": True, "errors": []},
+                            executor_result=tool_history or None,
+                            failure_type=None,
+                            action="tool_only_llm_fallback",
+                            meta=meta,
+                            runs_dir=runs_dir,
+                        )
+                        return {
+                            "output": stored_output,
+                            "raw_output": output,
+                            "executor_result": tool_history or None,
+                            "log_path": log_path,
+                            "selected_main": selected_main,
+                            "selected_shadows": selection.get("selected_shadows", []),
+                        }
         tool_output = _tool_history_to_output(role, tool_history)
         if isinstance(tool_output, dict) and tool_output.get("error"):
             validation = {"ok": False, "errors": [str(tool_output.get("error"))]}
@@ -2340,7 +2598,8 @@ def _execute_role_with_selection(
         }
 
     while attempt < max_attempts:
-        output = llm.generate(role, task_text, role_context)
+        llm_task_text = _append_diagnostics_to_task(task_text, role_context)
+        output = llm.generate(role, llm_task_text, role_context)
         valid, errors, model = validate_output(role, output, allow_unknown=allow_unknown_roles)
         validation = {"ok": valid, "errors": errors}
         executor_result = tool_history or None
@@ -2601,7 +2860,6 @@ def _select_next_role(
     if history and any(item.get("test_passed") or item.get("status") == "success" for item in history):
         print("[DEBUG] Task already completed, stopping role selection", file=sys.stderr)
         return None
-    print(f"[DEBUG] _select_next_role: available_roles={available_roles}, avoid_role={avoid_role}", file=sys.stderr)
     if llm:
         recent = history[-3:] if history else []
         recent_summary = [
@@ -3357,7 +3615,8 @@ def run_workflow(
             )
             continue
         while attempt < max_attempts:
-            output = llm.generate(role, task_text, role_context)
+            llm_task_text = _append_diagnostics_to_task(task_text, role_context)
+            output = llm.generate(role, llm_task_text, role_context)
             valid, errors, model = validate_output(role, output, allow_unknown=allow_unknown_roles)
             validation = {"ok": valid, "errors": errors}
             executor_result = tool_history or None
@@ -3371,6 +3630,18 @@ def run_workflow(
                     stored_output = output
                 else:
                     stored_output = {"raw": output}
+                if role_key == "builder" and task_context:
+                    code_text = stored_output.get("code_or_commands") if isinstance(stored_output, dict) else ""
+                    if isinstance(code_text, str) and code_text.strip():
+                        test_ok, test_error = _test_code(code_text, task_context)
+                        if not test_ok:
+                            role_context["diagnostics"] = {
+                                "test_error": test_error,
+                                "error_message": f"Test failed: {test_error}",
+                                "failed_code": code_text,
+                            }
+                            attempt += 1
+                            continue
                 results[role] = stored_output
                 if tool_history:
                     tool_exec[role] = tool_history

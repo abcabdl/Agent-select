@@ -1,0 +1,1702 @@
+{
+  "Solver-RatioChain01-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on ratio chain. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-ratiochain-4omini-t007-v001",
+      "gsm8k-solver-model-ratiochain-4o-t017-v001",
+      "gsm8k-solver-solve-ratiochain-4o-t023-v001",
+      "gsm8k-solver-verify-ratiochain-4omini-t001-v001",
+      "gsm8k-solver-format-ratiochain-4omini-t000-v001"
+    ]
+  },
+  "Solver-UnitRate02-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on unit rate. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-unitrate-4omini-t004-v002",
+      "gsm8k-solver-model-unitrate-4o-t019-v002",
+      "gsm8k-solver-solve-unitrate-4o-t020-v002",
+      "gsm8k-solver-verify-unitrate-4omini-t003-v002",
+      "gsm8k-solver-format-unitrate-4omini-t000-v002"
+    ]
+  },
+  "Solver-PercentChange03-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on percent change. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-percentchange-4omini-t006-v003",
+      "gsm8k-solver-model-percentchange-4o-t016-v003",
+      "gsm8k-solver-solve-percentchange-4o-t022-v003",
+      "gsm8k-solver-verify-percentchange-4omini-t005-v003",
+      "gsm8k-solver-format-percentchange-4omini-t000-v003"
+    ]
+  },
+  "Solver-FractionConversion04-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on fraction conversion. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-fractionconversion-4omini-t003-v004",
+      "gsm8k-solver-model-fractionconversion-4o-t018-v004",
+      "gsm8k-solver-solve-fractionconversion-4o-t024-v004",
+      "gsm8k-solver-verify-fractionconversion-4omini-t002-v004",
+      "gsm8k-solver-format-fractionconversion-4omini-t000-v004"
+    ]
+  },
+  "Solver-MixtureBalance05-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on mixture balance. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-mixturebalance-4omini-t005-v005",
+      "gsm8k-solver-model-mixturebalance-4o-t020-v005",
+      "gsm8k-solver-solve-mixturebalance-4o-t021-v005",
+      "gsm8k-solver-verify-mixturebalance-4omini-t004-v005",
+      "gsm8k-solver-format-mixturebalance-4omini-t000-v005"
+    ]
+  },
+  "Solver-WorkRate06-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on work rate. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-workrate-4omini-t007-v006",
+      "gsm8k-solver-model-workrate-4o-t017-v006",
+      "gsm8k-solver-solve-workrate-4o-t023-v006",
+      "gsm8k-solver-verify-workrate-4omini-t001-v006",
+      "gsm8k-solver-format-workrate-4omini-t000-v006"
+    ]
+  },
+  "Solver-TimeDistance07-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on time distance. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-timedistance-4omini-t004-v007",
+      "gsm8k-solver-model-timedistance-4o-t019-v007",
+      "gsm8k-solver-solve-timedistance-4o-t020-v007",
+      "gsm8k-solver-verify-timedistance-4omini-t003-v007",
+      "gsm8k-solver-format-timedistance-4omini-t000-v007"
+    ]
+  },
+  "Solver-ProfitMargin08-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on profit margin. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-profitmargin-4omini-t006-v008",
+      "gsm8k-solver-model-profitmargin-4o-t016-v008",
+      "gsm8k-solver-solve-profitmargin-4o-t022-v008",
+      "gsm8k-solver-verify-profitmargin-4omini-t005-v008",
+      "gsm8k-solver-format-profitmargin-4omini-t000-v008"
+    ]
+  },
+  "Solver-DiscountTax09-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on discount tax. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-discounttax-4omini-t003-v009",
+      "gsm8k-solver-model-discounttax-4o-t018-v009",
+      "gsm8k-solver-solve-discounttax-4o-t024-v009",
+      "gsm8k-solver-verify-discounttax-4omini-t002-v009",
+      "gsm8k-solver-format-discounttax-4omini-t000-v009"
+    ]
+  },
+  "Solver-SequenceCount10-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on sequence count. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-sequencecount-4omini-t005-v010",
+      "gsm8k-solver-model-sequencecount-4o-t020-v010",
+      "gsm8k-solver-solve-sequencecount-4o-t021-v010",
+      "gsm8k-solver-verify-sequencecount-4omini-t004-v010",
+      "gsm8k-solver-format-sequencecount-4omini-t000-v010"
+    ]
+  },
+  "Solver-AgeEquation11-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on age equation. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-ageequation-4omini-t007-v011",
+      "gsm8k-solver-model-ageequation-4o-t017-v011",
+      "gsm8k-solver-solve-ageequation-4o-t023-v011",
+      "gsm8k-solver-verify-ageequation-4omini-t001-v011",
+      "gsm8k-solver-format-ageequation-4omini-t000-v011"
+    ]
+  },
+  "Solver-SetOverlap12-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on set overlap. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-setoverlap-4omini-t004-v012",
+      "gsm8k-solver-model-setoverlap-4o-t019-v012",
+      "gsm8k-solver-solve-setoverlap-4o-t020-v012",
+      "gsm8k-solver-verify-setoverlap-4omini-t003-v012",
+      "gsm8k-solver-format-setoverlap-4omini-t000-v012"
+    ]
+  },
+  "Solver-PiecewisePricing13-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on piecewise pricing. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-piecewisepricing-4omini-t006-v013",
+      "gsm8k-solver-model-piecewisepricing-4o-t016-v013",
+      "gsm8k-solver-solve-piecewisepricing-4o-t022-v013",
+      "gsm8k-solver-verify-piecewisepricing-4omini-t005-v013",
+      "gsm8k-solver-format-piecewisepricing-4omini-t000-v013"
+    ]
+  },
+  "Solver-GeometryArea14-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on geometry area. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-geometryarea-4omini-t003-v014",
+      "gsm8k-solver-model-geometryarea-4o-t018-v014",
+      "gsm8k-solver-solve-geometryarea-4o-t024-v014",
+      "gsm8k-solver-verify-geometryarea-4omini-t002-v014",
+      "gsm8k-solver-format-geometryarea-4omini-t000-v014"
+    ]
+  },
+  "Solver-GeometryVolume15-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on geometry volume. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-geometryvolume-4omini-t005-v015",
+      "gsm8k-solver-model-geometryvolume-4o-t020-v015",
+      "gsm8k-solver-solve-geometryvolume-4o-t021-v015",
+      "gsm8k-solver-verify-geometryvolume-4omini-t004-v015",
+      "gsm8k-solver-format-geometryvolume-4omini-t000-v015"
+    ]
+  },
+  "Solver-ProbabilityExpected16-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on probability expected. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-probabilityexpected-4omini-t007-v016",
+      "gsm8k-solver-model-probabilityexpected-4o-t017-v016",
+      "gsm8k-solver-solve-probabilityexpected-4o-t023-v016",
+      "gsm8k-solver-verify-probabilityexpected-4omini-t001-v016",
+      "gsm8k-solver-format-probabilityexpected-4omini-t000-v016"
+    ]
+  },
+  "Solver-AverageWeighted17-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on average weighted. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-averageweighted-4omini-t004-v017",
+      "gsm8k-solver-model-averageweighted-4o-t019-v017",
+      "gsm8k-solver-solve-averageweighted-4o-t020-v017",
+      "gsm8k-solver-verify-averageweighted-4omini-t003-v017",
+      "gsm8k-solver-format-averageweighted-4omini-t000-v017"
+    ]
+  },
+  "Solver-ClockCalendar18-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on clock calendar. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-clockcalendar-4omini-t006-v018",
+      "gsm8k-solver-model-clockcalendar-4o-t016-v018",
+      "gsm8k-solver-solve-clockcalendar-4o-t022-v018",
+      "gsm8k-solver-verify-clockcalendar-4omini-t005-v018",
+      "gsm8k-solver-format-clockcalendar-4omini-t000-v018"
+    ]
+  },
+  "Solver-TravelSchedule19-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on travel schedule. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-travelschedule-4omini-t003-v019",
+      "gsm8k-solver-model-travelschedule-4o-t018-v019",
+      "gsm8k-solver-solve-travelschedule-4o-t024-v019",
+      "gsm8k-solver-verify-travelschedule-4omini-t002-v019",
+      "gsm8k-solver-format-travelschedule-4omini-t000-v019"
+    ]
+  },
+  "Solver-InventoryFlow20-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on inventory flow. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-inventoryflow-4omini-t005-v020",
+      "gsm8k-solver-model-inventoryflow-4o-t020-v020",
+      "gsm8k-solver-solve-inventoryflow-4o-t021-v020",
+      "gsm8k-solver-verify-inventoryflow-4omini-t004-v020",
+      "gsm8k-solver-format-inventoryflow-4omini-t000-v020"
+    ]
+  },
+  "Solver-SalaryOvertime21-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on salary overtime. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-salaryovertime-4omini-t007-v021",
+      "gsm8k-solver-model-salaryovertime-4o-t017-v021",
+      "gsm8k-solver-solve-salaryovertime-4o-t023-v021",
+      "gsm8k-solver-verify-salaryovertime-4omini-t001-v021",
+      "gsm8k-solver-format-salaryovertime-4omini-t000-v021"
+    ]
+  },
+  "Solver-LoanInterest22-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on loan interest. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-loaninterest-4omini-t004-v022",
+      "gsm8k-solver-model-loaninterest-4o-t019-v022",
+      "gsm8k-solver-solve-loaninterest-4o-t020-v022",
+      "gsm8k-solver-verify-loaninterest-4omini-t003-v022",
+      "gsm8k-solver-format-loaninterest-4omini-t000-v022"
+    ]
+  },
+  "Solver-CurrencyExchange23-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on currency exchange. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-currencyexchange-4omini-t006-v023",
+      "gsm8k-solver-model-currencyexchange-4o-t016-v023",
+      "gsm8k-solver-solve-currencyexchange-4o-t022-v023",
+      "gsm8k-solver-verify-currencyexchange-4omini-t005-v023",
+      "gsm8k-solver-format-currencyexchange-4omini-t000-v023"
+    ]
+  },
+  "Solver-MeasurementConversion24-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on measurement conversion. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-measurementconversion-4omini-t003-v024",
+      "gsm8k-solver-model-measurementconversion-4o-t018-v024",
+      "gsm8k-solver-solve-measurementconversion-4o-t024-v024",
+      "gsm8k-solver-verify-measurementconversion-4omini-t002-v024",
+      "gsm8k-solver-format-measurementconversion-4omini-t000-v024"
+    ]
+  },
+  "Solver-DigitNumberTheory25-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on digit number theory. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-digitnumbertheory-4omini-t005-v025",
+      "gsm8k-solver-model-digitnumbertheory-4o-t020-v025",
+      "gsm8k-solver-solve-digitnumbertheory-4o-t021-v025",
+      "gsm8k-solver-verify-digitnumbertheory-4omini-t004-v025",
+      "gsm8k-solver-format-digitnumbertheory-4omini-t000-v025"
+    ]
+  },
+  "Solver-CombinatoricSelection26-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on combinatoric selection. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-combinatoricselection-4omini-t007-v026",
+      "gsm8k-solver-model-combinatoricselection-4o-t017-v026",
+      "gsm8k-solver-solve-combinatoricselection-4o-t023-v026",
+      "gsm8k-solver-verify-combinatoricselection-4omini-t001-v026",
+      "gsm8k-solver-format-combinatoricselection-4omini-t000-v026"
+    ]
+  },
+  "Solver-ResourceAllocation27-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on resource allocation. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-resourceallocation-4omini-t004-v027",
+      "gsm8k-solver-model-resourceallocation-4o-t019-v027",
+      "gsm8k-solver-solve-resourceallocation-4o-t020-v027",
+      "gsm8k-solver-verify-resourceallocation-4omini-t003-v027",
+      "gsm8k-solver-format-resourceallocation-4omini-t000-v027"
+    ]
+  },
+  "Solver-ProductionPlanning28-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on production planning. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-productionplanning-4omini-t006-v028",
+      "gsm8k-solver-model-productionplanning-4o-t016-v028",
+      "gsm8k-solver-solve-productionplanning-4o-t022-v028",
+      "gsm8k-solver-verify-productionplanning-4omini-t005-v028",
+      "gsm8k-solver-format-productionplanning-4omini-t000-v028"
+    ]
+  },
+  "Solver-WaterTank29-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on water tank. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-watertank-4omini-t003-v029",
+      "gsm8k-solver-model-watertank-4o-t018-v029",
+      "gsm8k-solver-solve-watertank-4o-t024-v029",
+      "gsm8k-solver-verify-watertank-4omini-t002-v029",
+      "gsm8k-solver-format-watertank-4omini-t000-v029"
+    ]
+  },
+  "Solver-ComparisonScaling30-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on comparison scaling. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-comparisonscaling-4omini-t005-v030",
+      "gsm8k-solver-model-comparisonscaling-4o-t020-v030",
+      "gsm8k-solver-solve-comparisonscaling-4o-t021-v030",
+      "gsm8k-solver-verify-comparisonscaling-4omini-t004-v030",
+      "gsm8k-solver-format-comparisonscaling-4omini-t000-v030"
+    ]
+  },
+  "Solver-MultiStepBudget31-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on multi step budget. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-multistepbudget-4omini-t007-v031",
+      "gsm8k-solver-model-multistepbudget-4o-t017-v031",
+      "gsm8k-solver-solve-multistepbudget-4o-t023-v031",
+      "gsm8k-solver-verify-multistepbudget-4omini-t001-v031",
+      "gsm8k-solver-format-multistepbudget-4omini-t000-v031"
+    ]
+  },
+  "Solver-DistanceRoundtrip32-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on distance roundtrip. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-distanceroundtrip-4omini-t004-v032",
+      "gsm8k-solver-model-distanceroundtrip-4o-t019-v032",
+      "gsm8k-solver-solve-distanceroundtrip-4o-t020-v032",
+      "gsm8k-solver-verify-distanceroundtrip-4omini-t003-v032",
+      "gsm8k-solver-format-distanceroundtrip-4omini-t000-v032"
+    ]
+  },
+  "Solver-SurplusDeficit33-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on surplus deficit. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-surplusdeficit-4omini-t006-v033",
+      "gsm8k-solver-model-surplusdeficit-4o-t016-v033",
+      "gsm8k-solver-solve-surplusdeficit-4o-t022-v033",
+      "gsm8k-solver-verify-surplusdeficit-4omini-t005-v033",
+      "gsm8k-solver-format-surplusdeficit-4omini-t000-v033"
+    ]
+  },
+  "Solver-EqualPartition34-HighlyPrecise-GSM8K": {
+    "description": "GSM8K solver specialist focused on equal partition. Role=builder. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "builder"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-solver"
+    ],
+    "tools": [
+      "gsm8k-solver-analyze-equalpartition-4omini-t003-v034",
+      "gsm8k-solver-model-equalpartition-4o-t018-v034",
+      "gsm8k-solver-solve-equalpartition-4o-t024-v034",
+      "gsm8k-solver-verify-equalpartition-4omini-t002-v034",
+      "gsm8k-solver-format-equalpartition-4omini-t000-v034"
+    ]
+  },
+  "Verifier-UnitConsistency01-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on unit consistency. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-unitconsistency-4omini-t002-v001",
+      "gsm8k-verifier-model-unitconsistency-4omini-t009-v001",
+      "gsm8k-verifier-solve-unitconsistency-4o-t010-v001",
+      "gsm8k-verifier-verify-unitconsistency-4o-t002-v001",
+      "gsm8k-verifier-format-unitconsistency-4omini-t000-v001"
+    ]
+  },
+  "Verifier-ArithmeticRecompute02-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on arithmetic recompute. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-arithmeticrecompute-4omini-t004-v002",
+      "gsm8k-verifier-model-arithmeticrecompute-4omini-t006-v002",
+      "gsm8k-verifier-solve-arithmeticrecompute-4o-t012-v002",
+      "gsm8k-verifier-verify-arithmeticrecompute-4o-t002-v002",
+      "gsm8k-verifier-format-arithmeticrecompute-4omini-t000-v002"
+    ]
+  },
+  "Verifier-EquationBalance03-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on equation balance. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-equationbalance-4omini-t001-v003",
+      "gsm8k-verifier-model-equationbalance-4omini-t008-v003",
+      "gsm8k-verifier-solve-equationbalance-4o-t012-v003",
+      "gsm8k-verifier-verify-equationbalance-4o-t001-v003",
+      "gsm8k-verifier-format-equationbalance-4omini-t000-v003"
+    ]
+  },
+  "Verifier-BoundaryChecks04-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on boundary checks. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-boundarychecks-4omini-t003-v004",
+      "gsm8k-verifier-model-boundarychecks-4omini-t008-v004",
+      "gsm8k-verifier-solve-boundarychecks-4o-t011-v004",
+      "gsm8k-verifier-verify-boundarychecks-4o-t003-v004",
+      "gsm8k-verifier-format-boundarychecks-4omini-t000-v004"
+    ]
+  },
+  "Verifier-ConstraintSatisfaction05-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on constraint satisfaction. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-constraintsatisfaction-4omini-t003-v005",
+      "gsm8k-verifier-model-constraintsatisfaction-4omini-t007-v005",
+      "gsm8k-verifier-solve-constraintsatisfaction-4o-t013-v005",
+      "gsm8k-verifier-verify-constraintsatisfaction-4o-t000-v005",
+      "gsm8k-verifier-format-constraintsatisfaction-4omini-t000-v005"
+    ]
+  },
+  "Verifier-SignErrorGuard06-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on sign error guard. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-signerrorguard-4omini-t002-v006",
+      "gsm8k-verifier-model-signerrorguard-4omini-t009-v006",
+      "gsm8k-verifier-solve-signerrorguard-4o-t010-v006",
+      "gsm8k-verifier-verify-signerrorguard-4o-t002-v006",
+      "gsm8k-verifier-format-signerrorguard-4omini-t000-v006"
+    ]
+  },
+  "Verifier-RoundingAudit07-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on rounding audit. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-roundingaudit-4omini-t004-v007",
+      "gsm8k-verifier-model-roundingaudit-4omini-t006-v007",
+      "gsm8k-verifier-solve-roundingaudit-4o-t012-v007",
+      "gsm8k-verifier-verify-roundingaudit-4o-t002-v007",
+      "gsm8k-verifier-format-roundingaudit-4omini-t000-v007"
+    ]
+  },
+  "Verifier-PercentageSanity08-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on percentage sanity. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-percentagesanity-4omini-t001-v008",
+      "gsm8k-verifier-model-percentagesanity-4omini-t008-v008",
+      "gsm8k-verifier-solve-percentagesanity-4o-t012-v008",
+      "gsm8k-verifier-verify-percentagesanity-4o-t001-v008",
+      "gsm8k-verifier-format-percentagesanity-4omini-t000-v008"
+    ]
+  },
+  "Verifier-RateTimeCrosscheck09-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on rate time crosscheck. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-ratetimecrosscheck-4omini-t003-v009",
+      "gsm8k-verifier-model-ratetimecrosscheck-4omini-t008-v009",
+      "gsm8k-verifier-solve-ratetimecrosscheck-4o-t011-v009",
+      "gsm8k-verifier-verify-ratetimecrosscheck-4o-t003-v009",
+      "gsm8k-verifier-format-ratetimecrosscheck-4omini-t000-v009"
+    ]
+  },
+  "Verifier-CountingDoublecheck10-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on counting doublecheck. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-countingdoublecheck-4omini-t003-v010",
+      "gsm8k-verifier-model-countingdoublecheck-4omini-t007-v010",
+      "gsm8k-verifier-solve-countingdoublecheck-4o-t013-v010",
+      "gsm8k-verifier-verify-countingdoublecheck-4o-t000-v010",
+      "gsm8k-verifier-format-countingdoublecheck-4omini-t000-v010"
+    ]
+  },
+  "Verifier-CurrencyIntegrity11-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on currency integrity. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-currencyintegrity-4omini-t002-v011",
+      "gsm8k-verifier-model-currencyintegrity-4omini-t009-v011",
+      "gsm8k-verifier-solve-currencyintegrity-4o-t010-v011",
+      "gsm8k-verifier-verify-currencyintegrity-4o-t002-v011",
+      "gsm8k-verifier-format-currencyintegrity-4omini-t000-v011"
+    ]
+  },
+  "Verifier-TimelineConsistency12-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on timeline consistency. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-timelineconsistency-4omini-t004-v012",
+      "gsm8k-verifier-model-timelineconsistency-4omini-t006-v012",
+      "gsm8k-verifier-solve-timelineconsistency-4o-t012-v012",
+      "gsm8k-verifier-verify-timelineconsistency-4o-t002-v012",
+      "gsm8k-verifier-format-timelineconsistency-4omini-t000-v012"
+    ]
+  },
+  "Verifier-LogicGapDetection13-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on logic gap detection. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-logicgapdetection-4omini-t001-v013",
+      "gsm8k-verifier-model-logicgapdetection-4omini-t008-v013",
+      "gsm8k-verifier-solve-logicgapdetection-4o-t012-v013",
+      "gsm8k-verifier-verify-logicgapdetection-4o-t001-v013",
+      "gsm8k-verifier-format-logicgapdetection-4omini-t000-v013"
+    ]
+  },
+  "Verifier-InvariantTracking14-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on invariant tracking. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-invarianttracking-4omini-t003-v014",
+      "gsm8k-verifier-model-invarianttracking-4omini-t008-v014",
+      "gsm8k-verifier-solve-invarianttracking-4o-t011-v014",
+      "gsm8k-verifier-verify-invarianttracking-4o-t003-v014",
+      "gsm8k-verifier-format-invarianttracking-4omini-t000-v014"
+    ]
+  },
+  "Verifier-AlternativeMethodCheck15-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on alternative method check. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-alternativemethodcheck-4omini-t003-v015",
+      "gsm8k-verifier-model-alternativemethodcheck-4omini-t007-v015",
+      "gsm8k-verifier-solve-alternativemethodcheck-4o-t013-v015",
+      "gsm8k-verifier-verify-alternativemethodcheck-4o-t000-v015",
+      "gsm8k-verifier-format-alternativemethodcheck-4omini-t000-v015"
+    ]
+  },
+  "Verifier-DimensionalAnalysis16-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on dimensional analysis. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-dimensionalanalysis-4omini-t002-v016",
+      "gsm8k-verifier-model-dimensionalanalysis-4omini-t009-v016",
+      "gsm8k-verifier-solve-dimensionalanalysis-4o-t010-v016",
+      "gsm8k-verifier-verify-dimensionalanalysis-4o-t002-v016",
+      "gsm8k-verifier-format-dimensionalanalysis-4omini-t000-v016"
+    ]
+  },
+  "Verifier-AssumptionAudit17-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on assumption audit. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-assumptionaudit-4omini-t004-v017",
+      "gsm8k-verifier-model-assumptionaudit-4omini-t006-v017",
+      "gsm8k-verifier-solve-assumptionaudit-4o-t012-v017",
+      "gsm8k-verifier-verify-assumptionaudit-4o-t002-v017",
+      "gsm8k-verifier-format-assumptionaudit-4omini-t000-v017"
+    ]
+  },
+  "Verifier-OffByOneGuard18-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on off by one guard. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-offbyoneguard-4omini-t001-v018",
+      "gsm8k-verifier-model-offbyoneguard-4omini-t008-v018",
+      "gsm8k-verifier-solve-offbyoneguard-4o-t012-v018",
+      "gsm8k-verifier-verify-offbyoneguard-4o-t001-v018",
+      "gsm8k-verifier-format-offbyoneguard-4omini-t000-v018"
+    ]
+  },
+  "Verifier-OrderOfOpsAudit19-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on order of ops audit. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-orderofopsaudit-4omini-t003-v019",
+      "gsm8k-verifier-model-orderofopsaudit-4omini-t008-v019",
+      "gsm8k-verifier-solve-orderofopsaudit-4o-t011-v019",
+      "gsm8k-verifier-verify-orderofopsaudit-4o-t003-v019",
+      "gsm8k-verifier-format-orderofopsaudit-4omini-t000-v019"
+    ]
+  },
+  "Verifier-FractionDecimalMatch20-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on fraction decimal match. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-fractiondecimalmatch-4omini-t003-v020",
+      "gsm8k-verifier-model-fractiondecimalmatch-4omini-t007-v020",
+      "gsm8k-verifier-solve-fractiondecimalmatch-4o-t013-v020",
+      "gsm8k-verifier-verify-fractiondecimalmatch-4o-t000-v020",
+      "gsm8k-verifier-format-fractiondecimalmatch-4omini-t000-v020"
+    ]
+  },
+  "Verifier-IntegerFeasibility21-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on integer feasibility. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-integerfeasibility-4omini-t002-v021",
+      "gsm8k-verifier-model-integerfeasibility-4omini-t009-v021",
+      "gsm8k-verifier-solve-integerfeasibility-4o-t010-v021",
+      "gsm8k-verifier-verify-integerfeasibility-4o-t002-v021",
+      "gsm8k-verifier-format-integerfeasibility-4omini-t000-v021"
+    ]
+  },
+  "Verifier-NegativeValueGuard22-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on negative value guard. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-negativevalueguard-4omini-t004-v022",
+      "gsm8k-verifier-model-negativevalueguard-4omini-t006-v022",
+      "gsm8k-verifier-solve-negativevalueguard-4o-t012-v022",
+      "gsm8k-verifier-verify-negativevalueguard-4o-t002-v022",
+      "gsm8k-verifier-format-negativevalueguard-4omini-t000-v022"
+    ]
+  },
+  "Verifier-ExtremeCaseProbe23-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on extreme case probe. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-extremecaseprobe-4omini-t001-v023",
+      "gsm8k-verifier-model-extremecaseprobe-4omini-t008-v023",
+      "gsm8k-verifier-solve-extremecaseprobe-4o-t012-v023",
+      "gsm8k-verifier-verify-extremecaseprobe-4o-t001-v023",
+      "gsm8k-verifier-format-extremecaseprobe-4omini-t000-v023"
+    ]
+  },
+  "Verifier-DuplicateCountGuard24-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on duplicate count guard. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-duplicatecountguard-4omini-t003-v024",
+      "gsm8k-verifier-model-duplicatecountguard-4omini-t008-v024",
+      "gsm8k-verifier-solve-duplicatecountguard-4o-t011-v024",
+      "gsm8k-verifier-verify-duplicatecountguard-4o-t003-v024",
+      "gsm8k-verifier-format-duplicatecountguard-4omini-t000-v024"
+    ]
+  },
+  "Verifier-SetRelationCheck25-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on set relation check. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-setrelationcheck-4omini-t003-v025",
+      "gsm8k-verifier-model-setrelationcheck-4omini-t007-v025",
+      "gsm8k-verifier-solve-setrelationcheck-4o-t013-v025",
+      "gsm8k-verifier-verify-setrelationcheck-4o-t000-v025",
+      "gsm8k-verifier-format-setrelationcheck-4omini-t000-v025"
+    ]
+  },
+  "Verifier-RatioNormalization26-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on ratio normalization. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-rationormalization-4omini-t002-v026",
+      "gsm8k-verifier-model-rationormalization-4omini-t009-v026",
+      "gsm8k-verifier-solve-rationormalization-4o-t010-v026",
+      "gsm8k-verifier-verify-rationormalization-4o-t002-v026",
+      "gsm8k-verifier-format-rationormalization-4omini-t000-v026"
+    ]
+  },
+  "Verifier-TotalVsPartsCheck27-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on total vs parts check. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-totalvspartscheck-4omini-t004-v027",
+      "gsm8k-verifier-model-totalvspartscheck-4omini-t006-v027",
+      "gsm8k-verifier-solve-totalvspartscheck-4o-t012-v027",
+      "gsm8k-verifier-verify-totalvspartscheck-4o-t002-v027",
+      "gsm8k-verifier-format-totalvspartscheck-4omini-t000-v027"
+    ]
+  },
+  "Verifier-ResourceConservation28-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on resource conservation. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-resourceconservation-4omini-t001-v028",
+      "gsm8k-verifier-model-resourceconservation-4omini-t008-v028",
+      "gsm8k-verifier-solve-resourceconservation-4o-t012-v028",
+      "gsm8k-verifier-verify-resourceconservation-4o-t001-v028",
+      "gsm8k-verifier-format-resourceconservation-4omini-t000-v028"
+    ]
+  },
+  "Verifier-SymmetryCheck29-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on symmetry check. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-symmetrycheck-4omini-t003-v029",
+      "gsm8k-verifier-model-symmetrycheck-4omini-t008-v029",
+      "gsm8k-verifier-solve-symmetrycheck-4o-t011-v029",
+      "gsm8k-verifier-verify-symmetrycheck-4o-t003-v029",
+      "gsm8k-verifier-format-symmetrycheck-4omini-t000-v029"
+    ]
+  },
+  "Verifier-ParityCheck30-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on parity check. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-paritycheck-4omini-t003-v030",
+      "gsm8k-verifier-model-paritycheck-4omini-t007-v030",
+      "gsm8k-verifier-solve-paritycheck-4o-t013-v030",
+      "gsm8k-verifier-verify-paritycheck-4o-t000-v030",
+      "gsm8k-verifier-format-paritycheck-4omini-t000-v030"
+    ]
+  },
+  "Verifier-ReasoningTraceAudit31-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on reasoning trace audit. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-reasoningtraceaudit-4omini-t002-v031",
+      "gsm8k-verifier-model-reasoningtraceaudit-4omini-t009-v031",
+      "gsm8k-verifier-solve-reasoningtraceaudit-4o-t010-v031",
+      "gsm8k-verifier-verify-reasoningtraceaudit-4o-t002-v031",
+      "gsm8k-verifier-format-reasoningtraceaudit-4omini-t000-v031"
+    ]
+  },
+  "Verifier-AnswerMagnitudeCheck32-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on answer magnitude check. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-answermagnitudecheck-4omini-t004-v032",
+      "gsm8k-verifier-model-answermagnitudecheck-4omini-t006-v032",
+      "gsm8k-verifier-solve-answermagnitudecheck-4o-t012-v032",
+      "gsm8k-verifier-verify-answermagnitudecheck-4o-t002-v032",
+      "gsm8k-verifier-format-answermagnitudecheck-4omini-t000-v032"
+    ]
+  },
+  "Verifier-IndependenceCheck33-AuditStrict-GSM8K": {
+    "description": "GSM8K verifier specialist focused on independence check. Role=checker. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "checker"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-verifier"
+    ],
+    "tools": [
+      "gsm8k-verifier-analyze-independencecheck-4omini-t001-v033",
+      "gsm8k-verifier-model-independencecheck-4omini-t008-v033",
+      "gsm8k-verifier-solve-independencecheck-4o-t012-v033",
+      "gsm8k-verifier-verify-independencecheck-4o-t001-v033",
+      "gsm8k-verifier-format-independencecheck-4omini-t000-v033"
+    ]
+  },
+  "Formatter-FinalInteger01-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final integer. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalinteger-4omini-t003-v001",
+      "gsm8k-formatter-model-finalinteger-4omini-t004-v001",
+      "gsm8k-formatter-solve-finalinteger-4omini-t008-v001",
+      "gsm8k-formatter-verify-finalinteger-4omini-t002-v001",
+      "gsm8k-formatter-format-finalinteger-4omini-t000-v001"
+    ]
+  },
+  "Formatter-FinalDecimal02-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final decimal. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finaldecimal-4omini-t001-v002",
+      "gsm8k-formatter-model-finaldecimal-4omini-t005-v002",
+      "gsm8k-formatter-solve-finaldecimal-4omini-t008-v002",
+      "gsm8k-formatter-verify-finaldecimal-4omini-t002-v002",
+      "gsm8k-formatter-format-finaldecimal-4omini-t000-v002"
+    ]
+  },
+  "Formatter-FinalCurrency03-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final currency. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalcurrency-4omini-t002-v003",
+      "gsm8k-formatter-model-finalcurrency-4omini-t005-v003",
+      "gsm8k-formatter-solve-finalcurrency-4omini-t008-v003",
+      "gsm8k-formatter-verify-finalcurrency-4omini-t003-v003",
+      "gsm8k-formatter-format-finalcurrency-4omini-t000-v003"
+    ]
+  },
+  "Formatter-FinalPercentage04-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final percentage. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalpercentage-4omini-t002-v004",
+      "gsm8k-formatter-model-finalpercentage-4omini-t005-v004",
+      "gsm8k-formatter-solve-finalpercentage-4omini-t009-v004",
+      "gsm8k-formatter-verify-finalpercentage-4omini-t001-v004",
+      "gsm8k-formatter-format-finalpercentage-4omini-t000-v004"
+    ]
+  },
+  "Formatter-FinalFraction05-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final fraction. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalfraction-4omini-t002-v005",
+      "gsm8k-formatter-model-finalfraction-4omini-t006-v005",
+      "gsm8k-formatter-solve-finalfraction-4omini-t007-v005",
+      "gsm8k-formatter-verify-finalfraction-4omini-t002-v005",
+      "gsm8k-formatter-format-finalfraction-4omini-t000-v005"
+    ]
+  },
+  "Formatter-FinalTimeUnit06-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final time unit. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finaltimeunit-4omini-t003-v006",
+      "gsm8k-formatter-model-finaltimeunit-4omini-t004-v006",
+      "gsm8k-formatter-solve-finaltimeunit-4omini-t008-v006",
+      "gsm8k-formatter-verify-finaltimeunit-4omini-t002-v006",
+      "gsm8k-formatter-format-finaltimeunit-4omini-t000-v006"
+    ]
+  },
+  "Formatter-FinalDistanceUnit07-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final distance unit. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finaldistanceunit-4omini-t001-v007",
+      "gsm8k-formatter-model-finaldistanceunit-4omini-t005-v007",
+      "gsm8k-formatter-solve-finaldistanceunit-4omini-t008-v007",
+      "gsm8k-formatter-verify-finaldistanceunit-4omini-t002-v007",
+      "gsm8k-formatter-format-finaldistanceunit-4omini-t000-v007"
+    ]
+  },
+  "Formatter-FinalCountUnit08-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final count unit. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalcountunit-4omini-t002-v008",
+      "gsm8k-formatter-model-finalcountunit-4omini-t005-v008",
+      "gsm8k-formatter-solve-finalcountunit-4omini-t008-v008",
+      "gsm8k-formatter-verify-finalcountunit-4omini-t003-v008",
+      "gsm8k-formatter-format-finalcountunit-4omini-t000-v008"
+    ]
+  },
+  "Formatter-FinalVolumeUnit09-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final volume unit. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalvolumeunit-4omini-t002-v009",
+      "gsm8k-formatter-model-finalvolumeunit-4omini-t005-v009",
+      "gsm8k-formatter-solve-finalvolumeunit-4omini-t009-v009",
+      "gsm8k-formatter-verify-finalvolumeunit-4omini-t001-v009",
+      "gsm8k-formatter-format-finalvolumeunit-4omini-t000-v009"
+    ]
+  },
+  "Formatter-FinalAreaUnit10-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final area unit. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalareaunit-4omini-t002-v010",
+      "gsm8k-formatter-model-finalareaunit-4omini-t006-v010",
+      "gsm8k-formatter-solve-finalareaunit-4omini-t007-v010",
+      "gsm8k-formatter-verify-finalareaunit-4omini-t002-v010",
+      "gsm8k-formatter-format-finalareaunit-4omini-t000-v010"
+    ]
+  },
+  "Formatter-FinalMassUnit11-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final mass unit. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalmassunit-4omini-t003-v011",
+      "gsm8k-formatter-model-finalmassunit-4omini-t004-v011",
+      "gsm8k-formatter-solve-finalmassunit-4omini-t008-v011",
+      "gsm8k-formatter-verify-finalmassunit-4omini-t002-v011",
+      "gsm8k-formatter-format-finalmassunit-4omini-t000-v011"
+    ]
+  },
+  "Formatter-FinalRateUnit12-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on final rate unit. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-finalrateunit-4omini-t001-v012",
+      "gsm8k-formatter-model-finalrateunit-4omini-t005-v012",
+      "gsm8k-formatter-solve-finalrateunit-4omini-t008-v012",
+      "gsm8k-formatter-verify-finalrateunit-4omini-t002-v012",
+      "gsm8k-formatter-format-finalrateunit-4omini-t000-v012"
+    ]
+  },
+  "Formatter-HashlineStrict13-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on hashline strict. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-hashlinestrict-4omini-t002-v013",
+      "gsm8k-formatter-model-hashlinestrict-4omini-t005-v013",
+      "gsm8k-formatter-solve-hashlinestrict-4omini-t008-v013",
+      "gsm8k-formatter-verify-hashlinestrict-4omini-t003-v013",
+      "gsm8k-formatter-format-hashlinestrict-4omini-t000-v013"
+    ]
+  },
+  "Formatter-CommaCleanup14-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on comma cleanup. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-commacleanup-4omini-t002-v014",
+      "gsm8k-formatter-model-commacleanup-4omini-t005-v014",
+      "gsm8k-formatter-solve-commacleanup-4omini-t009-v014",
+      "gsm8k-formatter-verify-commacleanup-4omini-t001-v014",
+      "gsm8k-formatter-format-commacleanup-4omini-t000-v014"
+    ]
+  },
+  "Formatter-TrailingZeroTrim15-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on trailing zero trim. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-trailingzerotrim-4omini-t002-v015",
+      "gsm8k-formatter-model-trailingzerotrim-4omini-t006-v015",
+      "gsm8k-formatter-solve-trailingzerotrim-4omini-t007-v015",
+      "gsm8k-formatter-verify-trailingzerotrim-4omini-t002-v015",
+      "gsm8k-formatter-format-trailingzerotrim-4omini-t000-v015"
+    ]
+  },
+  "Formatter-ScientificToPlain16-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on scientific to plain. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-scientifictoplain-4omini-t003-v016",
+      "gsm8k-formatter-model-scientifictoplain-4omini-t004-v016",
+      "gsm8k-formatter-solve-scientifictoplain-4omini-t008-v016",
+      "gsm8k-formatter-verify-scientifictoplain-4omini-t002-v016",
+      "gsm8k-formatter-format-scientifictoplain-4omini-t000-v016"
+    ]
+  },
+  "Formatter-NegativeSignNormalize17-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on negative sign normalize. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-negativesignnormalize-4omini-t001-v017",
+      "gsm8k-formatter-model-negativesignnormalize-4omini-t005-v017",
+      "gsm8k-formatter-solve-negativesignnormalize-4omini-t008-v017",
+      "gsm8k-formatter-verify-negativesignnormalize-4omini-t002-v017",
+      "gsm8k-formatter-format-negativesignnormalize-4omini-t000-v017"
+    ]
+  },
+  "Formatter-MixedNumberNormalize18-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on mixed number normalize. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-mixednumbernormalize-4omini-t002-v018",
+      "gsm8k-formatter-model-mixednumbernormalize-4omini-t005-v018",
+      "gsm8k-formatter-solve-mixednumbernormalize-4omini-t008-v018",
+      "gsm8k-formatter-verify-mixednumbernormalize-4omini-t003-v018",
+      "gsm8k-formatter-format-mixednumbernormalize-4omini-t000-v018"
+    ]
+  },
+  "Formatter-UnitSuffixStandardize19-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on unit suffix standardize. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-unitsuffixstandardize-4omini-t002-v019",
+      "gsm8k-formatter-model-unitsuffixstandardize-4omini-t005-v019",
+      "gsm8k-formatter-solve-unitsuffixstandardize-4omini-t009-v019",
+      "gsm8k-formatter-verify-unitsuffixstandardize-4omini-t001-v019",
+      "gsm8k-formatter-format-unitsuffixstandardize-4omini-t000-v019"
+    ]
+  },
+  "Formatter-CurrencySymbolStrip20-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on currency symbol strip. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-currencysymbolstrip-4omini-t002-v020",
+      "gsm8k-formatter-model-currencysymbolstrip-4omini-t006-v020",
+      "gsm8k-formatter-solve-currencysymbolstrip-4omini-t007-v020",
+      "gsm8k-formatter-verify-currencysymbolstrip-4omini-t002-v020",
+      "gsm8k-formatter-format-currencysymbolstrip-4omini-t000-v020"
+    ]
+  },
+  "Formatter-PercentSymbolAppend21-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on percent symbol append. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-percentsymbolappend-4omini-t003-v021",
+      "gsm8k-formatter-model-percentsymbolappend-4omini-t004-v021",
+      "gsm8k-formatter-solve-percentsymbolappend-4omini-t008-v021",
+      "gsm8k-formatter-verify-percentsymbolappend-4omini-t002-v021",
+      "gsm8k-formatter-format-percentsymbolappend-4omini-t000-v021"
+    ]
+  },
+  "Formatter-AnswerOnlyMode22-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on answer only mode. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-answeronlymode-4omini-t001-v022",
+      "gsm8k-formatter-model-answeronlymode-4omini-t005-v022",
+      "gsm8k-formatter-solve-answeronlymode-4omini-t008-v022",
+      "gsm8k-formatter-verify-answeronlymode-4omini-t002-v022",
+      "gsm8k-formatter-format-answeronlymode-4omini-t000-v022"
+    ]
+  },
+  "Formatter-StepSummaryShort23-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on step summary short. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-stepsummaryshort-4omini-t002-v023",
+      "gsm8k-formatter-model-stepsummaryshort-4omini-t005-v023",
+      "gsm8k-formatter-solve-stepsummaryshort-4omini-t008-v023",
+      "gsm8k-formatter-verify-stepsummaryshort-4omini-t003-v023",
+      "gsm8k-formatter-format-stepsummaryshort-4omini-t000-v023"
+    ]
+  },
+  "Formatter-ExplanationCompact24-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on explanation compact. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-explanationcompact-4omini-t002-v024",
+      "gsm8k-formatter-model-explanationcompact-4omini-t005-v024",
+      "gsm8k-formatter-solve-explanationcompact-4omini-t009-v024",
+      "gsm8k-formatter-verify-explanationcompact-4omini-t001-v024",
+      "gsm8k-formatter-format-explanationcompact-4omini-t000-v024"
+    ]
+  },
+  "Formatter-JsonAnswerPack25-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on json answer pack. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-jsonanswerpack-4omini-t002-v025",
+      "gsm8k-formatter-model-jsonanswerpack-4omini-t006-v025",
+      "gsm8k-formatter-solve-jsonanswerpack-4omini-t007-v025",
+      "gsm8k-formatter-verify-jsonanswerpack-4omini-t002-v025",
+      "gsm8k-formatter-format-jsonanswerpack-4omini-t000-v025"
+    ]
+  },
+  "Formatter-MarkdownFreeOutput26-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on markdown free output. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-markdownfreeoutput-4omini-t003-v026",
+      "gsm8k-formatter-model-markdownfreeoutput-4omini-t004-v026",
+      "gsm8k-formatter-solve-markdownfreeoutput-4omini-t008-v026",
+      "gsm8k-formatter-verify-markdownfreeoutput-4omini-t002-v026",
+      "gsm8k-formatter-format-markdownfreeoutput-4omini-t000-v026"
+    ]
+  },
+  "Formatter-LocaleNumberNormalize27-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on locale number normalize. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-localenumbernormalize-4omini-t001-v027",
+      "gsm8k-formatter-model-localenumbernormalize-4omini-t005-v027",
+      "gsm8k-formatter-solve-localenumbernormalize-4omini-t008-v027",
+      "gsm8k-formatter-verify-localenumbernormalize-4omini-t002-v027",
+      "gsm8k-formatter-format-localenumbernormalize-4omini-t000-v027"
+    ]
+  },
+  "Formatter-ApproximationTagging28-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on approximation tagging. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-approximationtagging-4omini-t002-v028",
+      "gsm8k-formatter-model-approximationtagging-4omini-t005-v028",
+      "gsm8k-formatter-solve-approximationtagging-4omini-t008-v028",
+      "gsm8k-formatter-verify-approximationtagging-4omini-t003-v028",
+      "gsm8k-formatter-format-approximationtagging-4omini-t000-v028"
+    ]
+  },
+  "Formatter-ExactValueTagging29-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on exact value tagging. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-exactvaluetagging-4omini-t002-v029",
+      "gsm8k-formatter-model-exactvaluetagging-4omini-t005-v029",
+      "gsm8k-formatter-solve-exactvaluetagging-4omini-t009-v029",
+      "gsm8k-formatter-verify-exactvaluetagging-4omini-t001-v029",
+      "gsm8k-formatter-format-exactvaluetagging-4omini-t000-v029"
+    ]
+  },
+  "Formatter-BoxAnswerStyle30-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on box answer style. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-boxanswerstyle-4omini-t002-v030",
+      "gsm8k-formatter-model-boxanswerstyle-4omini-t006-v030",
+      "gsm8k-formatter-solve-boxanswerstyle-4omini-t007-v030",
+      "gsm8k-formatter-verify-boxanswerstyle-4omini-t002-v030",
+      "gsm8k-formatter-format-boxanswerstyle-4omini-t000-v030"
+    ]
+  },
+  "Formatter-DoubleHashStyle31-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on double hash style. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-doublehashstyle-4omini-t003-v031",
+      "gsm8k-formatter-model-doublehashstyle-4omini-t004-v031",
+      "gsm8k-formatter-solve-doublehashstyle-4omini-t008-v031",
+      "gsm8k-formatter-verify-doublehashstyle-4omini-t002-v031",
+      "gsm8k-formatter-format-doublehashstyle-4omini-t000-v031"
+    ]
+  },
+  "Formatter-NewlineSafeOutput32-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on newline safe output. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-newlinesafeoutput-4omini-t001-v032",
+      "gsm8k-formatter-model-newlinesafeoutput-4omini-t005-v032",
+      "gsm8k-formatter-solve-newlinesafeoutput-4omini-t008-v032",
+      "gsm8k-formatter-verify-newlinesafeoutput-4omini-t002-v032",
+      "gsm8k-formatter-format-newlinesafeoutput-4omini-t000-v032"
+    ]
+  },
+  "Formatter-DedupeWhitespace33-Deterministic-GSM8K": {
+    "description": "GSM8K formatter specialist focused on dedupe whitespace. Role=refractor. Uses 5 dedicated non-overlapping tools.",
+    "role_tags": [
+      "refractor"
+    ],
+    "domain_tags": [
+      "gsm8k-math-word-problems",
+      "gsm8k-formatter"
+    ],
+    "tools": [
+      "gsm8k-formatter-analyze-dedupewhitespace-4omini-t002-v033",
+      "gsm8k-formatter-model-dedupewhitespace-4omini-t005-v033",
+      "gsm8k-formatter-solve-dedupewhitespace-4omini-t008-v033",
+      "gsm8k-formatter-verify-dedupewhitespace-4omini-t003-v033",
+      "gsm8k-formatter-format-dedupewhitespace-4omini-t000-v033"
+    ]
+  }
+}

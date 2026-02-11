@@ -1,0 +1,17 @@
+{
+  "agent_name": "postprocess_tool_agent",
+  "agent_id": "special-postprocess-agent",
+  "tool_ids": [
+    "postprocess-fallback-guard",
+    "postprocess-extract-cleanup",
+    "postprocess-stop-token-trim",
+    "postprocess-normalize-body",
+    "postprocess-param-consistency",
+    "postprocess-builtin-shadowing",
+    "postprocess-syntax-indent-repair",
+    "postprocess-name-scope-repair",
+    "postprocess-timeout-guard",
+    "postprocess-fallback-guard"
+  ],
+  "source_db": "C:\\Users\\zrz20\\Desktop\\vscode\\Agent\\Agent-router\\repo\\demo_registry.sqlite"
+}

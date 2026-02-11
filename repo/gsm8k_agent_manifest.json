@@ -1,0 +1,15 @@
+{
+  "generated_at_utc": "2026-02-09T06:00:22.031688",
+  "agent_count": 100,
+  "tool_count": 500,
+  "distribution": {
+    "solver": 34,
+    "verifier": 33,
+    "formatter": 33
+  },
+  "tools_per_agent": 5,
+  "all_tools_unique_across_agents": true,
+  "duplicate_tool_ids": [],
+  "design_path": "C:\\Users\\zrz20\\Desktop\\vscode\\Agent\\Agent-router\\repo\\agent_tool_design_gsm8k_v1.json",
+  "tools_dir": "C:\\Users\\zrz20\\Desktop\\vscode\\Agent\\Agent-router\\repo\\generated_tools"
+}

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
+import re
 from typing import Any, Dict, List
 
 
@@ -36,6 +38,31 @@ def _parse_list(value: str) -> List[str]:
     if not value:
         return []
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _extract_first_function_from_code(code: str) -> Any:
+    if not code:
+        return None
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            return node
+    return None
+
+
+def _extract_entry_point_from_row(example: Dict[str, Any]) -> str:
+    entry = str(example.get("entry_point") or "")
+    if entry:
+        return entry
+    code = str(example.get("code") or "")
+    fn = _extract_first_function_from_code(code)
+    if fn is not None:
+        return fn.name
+    m = re.search(r"def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", code)
+    return m.group(1) if m else ""
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,6 +100,13 @@ def parse_args() -> argparse.Namespace:
         "--convert_humaneval",
         action="store_true",
         help="automatically convert raw HumanEval rows (name, prompt, test) into router training samples with heuristic labels",
+    )
+    parser.add_argument(
+        "--convert_dataset",
+        type=str,
+        default="none",
+        choices=["none", "humaneval", "mbpp"],
+        help="convert raw dataset rows to router chat samples before training",
     )
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--grad_accum", type=int, default=8)
@@ -115,7 +149,11 @@ def main() -> None:
     if args.max_samples and args.max_samples > 0:
         dataset = dataset.select(range(min(args.max_samples, len(dataset))))
 
-    if args.convert_humaneval:
+    convert_dataset = args.convert_dataset
+    if args.convert_humaneval and convert_dataset == "none":
+        convert_dataset = "humaneval"
+
+    if convert_dataset != "none":
         def _heuristic_label_generator(prompt_text: str) -> Dict[str, Any]:
             # Simple heuristic to generate training targets
             # Ideally this should come from a teacher model (e.g. GPT-4)
@@ -140,20 +178,31 @@ def main() -> None:
                 "agent_id": roles[0] if topology == "single" else None
             }
 
-        def _convert_humaneval_row(example: Dict[str, Any]) -> Dict[str, Any]:
+        def _convert_dataset_row(example: Dict[str, Any]) -> Dict[str, Any]:
             # If already has messages, skip
             if example.get("messages"):
                 return example
-            
-            task_prompt = example.get("prompt") or ""
-            # Some HumanEval datasets use 'prompt' for the code snippet
-            entry_point = example.get("entry_point")
-            
+
+            if convert_dataset == "mbpp":
+                task_prompt = str(example.get("text") or example.get("prompt") or "")
+                entry_point = _extract_entry_point_from_row(example)
+                tests = example.get("test_list") or []
+                tests_preview = ""
+                if isinstance(tests, list) and tests:
+                    tests_preview = "\n".join([str(x) for x in tests[:3]])
+            else:
+                # humaneval
+                task_prompt = str(example.get("prompt") or example.get("text") or "")
+                entry_point = str(example.get("entry_point") or "")
+                tests_preview = str(example.get("test") or "")
+
             user_content = f"Task: Implement the following Python function:\n\n{task_prompt}"
             if entry_point:
                 user_content += f"\n\nEntry point: {entry_point}"
+            if tests_preview:
+                user_content += f"\n\nTests (preview):\n{tests_preview}"
 
-            structure = _heuristic_label_generator(task_prompt)
+            structure = _heuristic_label_generator(user_content)
             
             system_prompt = (
                 "You are an expert software architect. "
@@ -166,9 +215,13 @@ def main() -> None:
                 {"role": "user", "content": user_content},
                 {"role": "assistant", "content": json.dumps(structure, ensure_ascii=False)}
             ]
-            return {"messages": messages, "converted": True}
+            return {
+                "messages": messages,
+                "converted": True,
+                "sample_type": f"{convert_dataset}_heuristic_distilled",
+            }
 
-        dataset = dataset.map(_convert_humaneval_row)
+        dataset = dataset.map(_convert_dataset_row)
 
     def _extract_prompt_response(example: Dict[str, Any]) -> Dict[str, str]:
         prompt = str(example.get("input") or "")
@@ -276,6 +329,8 @@ def main() -> None:
 
     quant_config = None
     model_kwargs = {"trust_remote_code": True}
+    local_rank = int(os.environ.get("LOCAL_RANK", "-1"))
+    is_distributed = local_rank >= 0
     if args.use_4bit:
         quant_config = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -284,15 +339,42 @@ def main() -> None:
             bnb_4bit_quant_type="nf4",
         )
         model_kwargs["quantization_config"] = quant_config
+        # For DDP + 4-bit, each rank must load the model on its own device.
+        if is_distributed:
+            model_kwargs["device_map"] = {"": local_rank}
 
     model = AutoModelForCausalLM.from_pretrained(model_path, **model_kwargs)
 
     if args.use_4bit:
-        model = prepare_model_for_kbit_training(model)
-    if args.gradient_checkpointing:
-        model.gradient_checkpointing_enable()
-        if hasattr(model, "config"):
-            model.config.use_cache = False
+        # prepare_model_for_kbit_training may enable checkpointing internally.
+        # Control it explicitly to avoid double-enabling in DDP.
+        if args.gradient_checkpointing:
+            try:
+                model = prepare_model_for_kbit_training(
+                    model,
+                    use_gradient_checkpointing=True,
+                    gradient_checkpointing_kwargs={"use_reentrant": False},
+                )
+            except TypeError:
+                model = prepare_model_for_kbit_training(
+                    model,
+                    use_gradient_checkpointing=True,
+                )
+        else:
+            model = prepare_model_for_kbit_training(
+                model,
+                use_gradient_checkpointing=False,
+            )
+    elif args.gradient_checkpointing:
+        # DDP + LoRA often needs non-reentrant checkpointing to avoid
+        # "Expected to mark a variable ready only once" runtime errors.
+        try:
+            model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+        except TypeError:
+            model.gradient_checkpointing_enable()
+
+    if args.gradient_checkpointing and hasattr(model, "config"):
+        model.config.use_cache = False
 
     target_modules = _parse_list(args.target_modules)
     lora_config = LoraConfig(
@@ -346,7 +428,11 @@ def main() -> None:
         warmup_ratio=args.warmup_ratio,
         weight_decay=args.weight_decay,
         lr_scheduler_type=args.lr_scheduler,
-        gradient_checkpointing=args.gradient_checkpointing,
+        # Checkpointing has been enabled on the model explicitly above.
+        gradient_checkpointing=False,
+        # Avoid extra autograd traversals and DDP hook conflicts with LoRA+checkpointing.
+        ddp_find_unused_parameters=False if is_distributed else None,
+        gradient_checkpointing_kwargs=None,
     )
 
     trainer = Trainer(

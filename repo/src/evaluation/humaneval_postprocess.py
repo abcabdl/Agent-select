@@ -805,5 +805,3 @@ def _run_python(code: str, timeout_s: float) -> Tuple[bool, str]:
     stdout = result.stdout.strip()
     message = stderr or stdout or f"exit_code={result.returncode}"
     return False, message
-
-
