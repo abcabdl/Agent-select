@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -28,8 +29,10 @@ from evaluation.humaneval_postprocess import (
     _extract_code_block,
     _extract_code_from_results,
     _extract_function_signature,
+    _extract_assertion_hint,
     _looks_like_assertion_error,
     _normalize_completion,
+    _strip_redundant_def,
     _repair_assertion_completion_with_llm,
     _evaluate_with_postprocess_check,
     _run_python,
@@ -300,6 +303,7 @@ def _auto_generate_solutions_orchestrator(
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     with SQLiteRegistry(db_path) as registry, open(out_path, "w", encoding="utf-8") as f:
         for task in _iter_progress(tasks, desc="generate"):
+            task_started = time.perf_counter()
             name = task.get("name") or task.get("task_id") or ""
             original_prompt = task.get("prompt") or ""  # Save original prompt without suffix
             entry_point = task.get("entry_point")
@@ -385,6 +389,7 @@ def _auto_generate_solutions_orchestrator(
                     )
                 effective_router_llm_client = router_remote_client
 
+            workflow_started = time.perf_counter()
             result = run_workflow(
                 task_text=task_text,
                 roles=roles,
@@ -426,6 +431,7 @@ def _auto_generate_solutions_orchestrator(
                 force_role=force_role,
                 strict_roles=strict_roles,
             )
+            workflow_elapsed = time.perf_counter() - workflow_started
 
             results = result.get("results") or {}
             tool_exec = result.get("tool_exec")
@@ -437,6 +443,7 @@ def _auto_generate_solutions_orchestrator(
             task_meta = {"topology": topology_info, "selected_agents": selections}
             if include_tool_trace and tool_trace is not None:
                 task_meta["tool_trace"] = json.loads(json.dumps(tool_trace, ensure_ascii=True, default=str))
+            task_meta["workflow_time_s"] = round(workflow_elapsed, 3)
             
             # Include tool_exec in extraction so we can recover code even if role outputs
             # were validated into schemas that drop code_or_commands (e.g., planner).
@@ -536,6 +543,10 @@ def _auto_generate_solutions_orchestrator(
                             test_code=test,
                             entry_point=entry_point,
                             error_message=msg_pre,
+                            failure_context=(
+                                f"assertion_hint={_extract_assertion_hint(msg_pre)}\n"
+                                f"error={msg_pre}"
+                            ),
                         )
                         if not repaired_completion or repaired_completion == current_completion:
                             break
@@ -563,6 +574,7 @@ def _auto_generate_solutions_orchestrator(
                         task_meta["assertion_logic_repairs"] = repair_logs
             solutions[str(name)] = completion
             f.write(json.dumps({"name": name, "completion": completion}, ensure_ascii=True) + "\n")
+            task_meta["generation_time_s"] = round(time.perf_counter() - task_started, 3)
             meta[str(name)] = task_meta
 
     return solutions, meta
@@ -578,6 +590,7 @@ def evaluate(
     passed = 0
     results: List[dict] = []
     for task in tasks:
+        eval_started = time.perf_counter()
         name = task.get("name") or task.get("task_id") or ""
         prompt = task.get("prompt") or ""
         test_code = task.get("test") or ""
@@ -596,6 +609,7 @@ def evaluate(
         if ok:
             passed += 1
         record = {"name": name, "ok": ok, "error": message}
+        record["eval_time_s"] = round(time.perf_counter() - eval_started, 3)
         if postprocess_info:
             record["postprocess_check"] = postprocess_info
         results.append(record)
@@ -839,6 +853,7 @@ def main() -> None:
     passed = 0
     results: List[dict] = []
     for task in _iter_progress(tasks, desc="evaluate"):
+        eval_started = time.perf_counter()
         name = task.get("name") or task.get("task_id") or ""
         prompt = task.get("prompt") or ""
         test_code = task.get("test") or ""
@@ -857,6 +872,7 @@ def main() -> None:
         if ok:
             passed += 1
         record = {"name": name, "ok": ok, "error": message}
+        record["eval_time_s"] = round(time.perf_counter() - eval_started, 3)
         meta = meta_by_task.get(str(name))
         if meta:
             record.update(meta)

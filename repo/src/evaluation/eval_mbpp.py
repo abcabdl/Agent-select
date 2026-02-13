@@ -22,8 +22,19 @@ from evaluation import humaneval_postprocess
 
 
 _MBPP_SCORE_MARKER = "__MBPP_ASSERT_SCORE__"
+_MBPP_ASSERT_DIAG_MARKER = "__MBPP_ASSERT_DIAG__"
 _MBPP_POSTPROCESS_ROUNDS = 2
 _MBPP_PATCHED = False
+_MBPP_REPAIR_STYLE_RULES = (
+    "Repair style rules: keep logic minimal and test-driven. "
+    "Do not add new input validation, isinstance checks, early guards, or raise statements "
+    "unless explicitly required by the provided asserts."
+)
+_MBPP_REPAIR_STYLE_RULES_STRICT = (
+    "Strict round rule: previous repair was ineffective. "
+    "Modify core computation to satisfy the failing assert exactly; "
+    "avoid defensive programming and avoid introducing new exceptions."
+)
 
 
 def _strip_tasks_arg(argv: List[str]) -> List[str]:
@@ -60,6 +71,317 @@ def _extract_assert_lines(test_code: str) -> List[str]:
         if s.startswith("assert "):
             lines.append(s)
     return lines
+
+
+def _compact_text(text: str, max_chars: int = 180) -> str:
+    cleaned = " ".join(str(text or "").split())
+    if len(cleaned) <= max_chars:
+        return cleaned
+    return cleaned[: max_chars - 3] + "..."
+
+
+def _compact_value(value: Any, max_chars: int = 240) -> str:
+    if value is None:
+        return ""
+    return _compact_text(str(value), max_chars=max_chars)
+
+
+def _extract_assert_examples(test_code: str, max_examples: int = 2) -> List[Dict[str, str]]:
+    examples: List[Dict[str, str]] = []
+    for line in _extract_assert_lines(test_code):
+        if len(examples) >= max_examples:
+            break
+        try:
+            node = ast.parse(line).body[0]
+        except SyntaxError:
+            continue
+        if not isinstance(node, ast.Assert):
+            continue
+        test = node.test
+        if not isinstance(test, ast.Compare) or len(test.ops) != 1 or not isinstance(test.ops[0], ast.Eq):
+            continue
+        left = test.left
+        right = test.comparators[0]
+        call, _ = _unwrap_candidate_call(left)
+        if call is None:
+            continue
+        arg_src = ", ".join(ast.unparse(arg) if hasattr(ast, "unparse") else "arg" for arg in call.args)
+        expected_src = ast.unparse(right) if hasattr(ast, "unparse") else "expected"
+        examples.append({
+            "input": _compact_text(arg_src, max_chars=180),
+            "expected": _compact_text(expected_src, max_chars=180),
+            "assert": _compact_text(line, max_chars=240),
+        })
+    return examples
+
+
+def _build_mbpp_assertion_context(test_code: str, max_examples: int = 2) -> str:
+    examples = _extract_assert_examples(test_code, max_examples=max_examples)
+    if not examples:
+        return ""
+    lines = ["MBPP assertion focus (must satisfy exactly):"]
+    for idx, example in enumerate(examples, start=1):
+        lines.append(f"{idx}. input: {example['input']}")
+        lines.append(f"   expected: {example['expected']}")
+    return "\n".join(lines)
+
+
+def _comment_block(text: str) -> str:
+    if not text:
+        return ""
+    commented: List[str] = []
+    for line in text.splitlines():
+        if line.strip():
+            commented.append(f"# {line}")
+        else:
+            commented.append("#")
+    return "\n".join(commented)
+
+
+def _append_mbpp_assertion_context(prompt: str, test_code: str) -> str:
+    base = str(prompt or "")
+    ctx = _build_mbpp_assertion_context(test_code)
+    if not ctx:
+        return base
+    if "MBPP assertion focus" in base:
+        return base
+    return f"{base}\n\n{_comment_block(ctx)}\n"
+
+
+def _format_param_types(contract: Dict[str, Any]) -> str:
+    raw = contract.get("param_types") if isinstance(contract, dict) else None
+    if not isinstance(raw, dict) or not raw:
+        return ""
+    parts: List[str] = []
+    for idx, types in sorted(raw.items(), key=lambda item: int(item[0]) if str(item[0]).isdigit() else str(item[0])):
+        if isinstance(types, list):
+            type_desc = "|".join(str(t) for t in types if t)
+        else:
+            type_desc = str(types)
+        if type_desc:
+            parts.append(f"{idx}={type_desc}")
+    return "; ".join(parts)
+
+
+def _looks_like_error_text(code: str) -> bool:
+    text = str(code or "").strip()
+    if not text:
+        return False
+    lower = text.lower()
+    if text.startswith("# Error") or text.startswith("Error:"):
+        return True
+    if "traceback (most recent call last)" in lower:
+        return True
+    if "error calling llm" in lower:
+        return True
+    if "timed out" in lower or "timeout" in lower:
+        return True
+    return False
+
+
+def _looks_like_repairable_runtime_failure(error_message: str) -> bool:
+    text = str(error_message or "")
+    if humaneval_postprocess._looks_like_assertion_error(text):
+        return True
+    return bool(re.search(r"\b(TypeError|ValueError)\b", text))
+
+
+def _classify_failure_kind(error_message: str, diag: Optional[Dict[str, Any]] = None) -> str:
+    text = str(error_message or "")
+    lower = text.lower()
+    if humaneval_postprocess._looks_like_assertion_error(text):
+        return "assertion"
+    if re.search(r"\bTypeError\b", text):
+        return "type"
+    if re.search(r"\bValueError\b", text):
+        return "value"
+    if re.search(r"\b(SyntaxError|IndentationError|TabError)\b", text):
+        return "syntax"
+    if "timeout" in lower or "timed out" in lower:
+        return "timeout"
+    diag_error = str((diag or {}).get("error_type") or "")
+    if diag_error in {"TypeError", "ValueError", "SyntaxError", "IndentationError", "TabError"}:
+        return diag_error.replace("Error", "").lower()
+    return "other"
+
+
+def _failure_kind_guidance_lines(
+    failure_kind: str,
+    diag: Optional[Dict[str, Any]] = None,
+) -> List[str]:
+    if failure_kind == "assertion":
+        lines = [
+            "Error-class guidance (assertion): focus on output logic for the shown failing assert.",
+            "Do not add blanket input validation branches or new exceptions.",
+            "Keep output type/order exactly as tests require.",
+        ]
+        if diag and diag.get("input_src"):
+            lines.append(f"Failing input focus: {diag.get('input_src')}")
+        return lines
+    if failure_kind == "type":
+        return [
+            "Error-class guidance (type): fix operand/container type mismatch near failing expression.",
+            "Do not add global isinstance gates that reject valid test inputs.",
+            "Prefer local conversion/selection consistent with asserts, and keep return type contract.",
+        ]
+    if failure_kind == "value":
+        return [
+            "Error-class guidance (value): adjust computation domain/edge handling to match asserts.",
+            "Avoid introducing new raise paths unless tests explicitly expect exceptions.",
+            "Preserve existing structure and only patch the branch causing wrong value behavior.",
+        ]
+    if failure_kind == "syntax":
+        return [
+            "Error-class guidance (syntax): repair only syntax/indentation.",
+            "Do not alter algorithmic structure unless strictly necessary for syntax validity.",
+        ]
+    if failure_kind == "timeout":
+        return [
+            "Error-class guidance (timeout): ensure finite loops and reduce unnecessary nested work.",
+            "Keep algorithm shape and patch only the non-terminating/slow branch.",
+        ]
+    return [
+        "Error-class guidance (generic): keep edits minimal and tied to the observed failing behavior.",
+    ]
+
+
+def _code_structure_metrics(code: str) -> Dict[str, int]:
+    text = str(code or "")
+    lines = text.splitlines()
+    non_empty = [ln for ln in lines if ln.strip()]
+    non_comment = [ln for ln in non_empty if not ln.strip().startswith("#")]
+    indented = "\n".join(("    " + ln) if ln.strip() else "    " for ln in lines) or "    pass"
+    wrapped = f"def __mbpp_tmp__():\n{indented}\n"
+    try:
+        tree = ast.parse(wrapped)
+    except SyntaxError:
+        return {
+            "line_count": len(non_comment),
+            "stmt_count": 0,
+            "flow_count": 0,
+            "raise_count": 0,
+            "guard_count": 0,
+        }
+    fn = tree.body[0] if tree.body else None
+    body = fn.body if isinstance(fn, ast.FunctionDef) else []
+    flow_types = (ast.If, ast.For, ast.While, ast.Try, ast.With, ast.Match)
+    flow_count = 0
+    raise_count = 0
+    guard_count = 0
+    for node in ast.walk(fn) if fn is not None else []:
+        if isinstance(node, flow_types):
+            flow_count += 1
+        if isinstance(node, ast.Raise):
+            raise_count += 1
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "isinstance":
+            guard_count += 1
+        if isinstance(node, ast.Compare):
+            for op in node.ops:
+                if isinstance(op, (ast.Is, ast.IsNot)):
+                    guard_count += 1
+    return {
+        "line_count": len(non_comment),
+        "stmt_count": len(body),
+        "flow_count": flow_count,
+        "raise_count": raise_count,
+        "guard_count": guard_count,
+    }
+
+
+def _is_non_minimal_change(
+    base_code: str,
+    new_code: str,
+    base_quality: Dict[str, Any],
+    new_quality: Dict[str, Any],
+) -> bool:
+    if not str(base_code or "").strip() or not str(new_code or "").strip():
+        return False
+    if new_quality.get("full_ok"):
+        return False
+    # Allow broad edits only when score genuinely improves.
+    if int(new_quality.get("passed") or 0) > int(base_quality.get("passed") or 0):
+        return False
+
+    base = _code_structure_metrics(base_code)
+    new = _code_structure_metrics(new_code)
+    line_limit = max(base["line_count"] + 12, int(base["line_count"] * 1.8) + 2)
+    if new["line_count"] > line_limit:
+        return True
+    if abs(new["stmt_count"] - base["stmt_count"]) > 6:
+        return True
+    if abs(new["flow_count"] - base["flow_count"]) > 3:
+        return True
+    if new["raise_count"] > base["raise_count"]:
+        return True
+    if new["guard_count"] > base["guard_count"] + 2:
+        return True
+    return False
+
+
+def _failure_context_message(
+    error_message: str,
+    test_code: str,
+    max_examples: int = 2,
+    diag: Optional[Dict[str, Any]] = None,
+    contract: Optional[Dict[str, Any]] = None,
+    failure_kind: str = "other",
+    strict_round: bool = False,
+    force_logic_change: bool = False,
+) -> str:
+    base = _compact_text(error_message or "", max_chars=700)
+    lines: List[str] = []
+    if base:
+        lines.append(base)
+
+    if diag and not diag.get("ok"):
+        lines.append("Failed assert details:")
+        idx = diag.get("assert_index")
+        if idx is not None:
+            lines.append(f"assert_index: {idx}")
+        assert_src = _compact_value(diag.get("assert_src"), max_chars=260)
+        if assert_src:
+            lines.append(f"assert: {assert_src}")
+        input_src = _compact_value(diag.get("input_src"), max_chars=220)
+        if input_src:
+            lines.append(f"input: {input_src}")
+        expected_src = _compact_value(diag.get("expected_src"), max_chars=220)
+        if expected_src:
+            lines.append(f"expected: {expected_src}")
+        expected_type = _compact_value(diag.get("expected_type"), max_chars=80)
+        actual_type = _compact_value(diag.get("actual_type"), max_chars=80)
+        if expected_type or actual_type:
+            lines.append(f"expected_type: {expected_type} actual_type: {actual_type}")
+        expected_val = _compact_value(diag.get("expected"), max_chars=240)
+        actual_val = _compact_value(diag.get("actual"), max_chars=240)
+        if expected_val:
+            lines.append(f"expected_value: {expected_val}")
+        if actual_val:
+            lines.append(f"actual_value: {actual_val}")
+        error_type = _compact_value(diag.get("error_type"), max_chars=80)
+        error_msg = _compact_value(diag.get("error_message"), max_chars=220)
+        if error_type:
+            lines.append(f"exception: {error_type} {error_msg}")
+
+    if contract:
+        param_types = _format_param_types(contract)
+        if param_types:
+            lines.append(f"param_types: {param_types}")
+        if contract.get("list_of_lists"):
+            lines.append("Output must be list of lists (not tuples).")
+
+    ctx = _build_mbpp_assertion_context(test_code, max_examples=max_examples)
+    if ctx:
+        lines.append("")
+        lines.append(ctx)
+    lines.append("")
+    lines.extend(_failure_kind_guidance_lines(failure_kind, diag=diag))
+    lines.append("")
+    lines.append(_MBPP_REPAIR_STYLE_RULES)
+    if strict_round:
+        lines.append(_MBPP_REPAIR_STYLE_RULES_STRICT)
+    if force_logic_change:
+        lines.append("Previous attempt made no functional change; update computation logic directly.")
+    return "\n".join(line for line in lines if line is not None)
 
 
 def _split_setup_and_asserts(test_code: str) -> Tuple[str, List[str]]:
@@ -120,6 +442,10 @@ def _infer_node_type(node: ast.AST) -> str:
     return "unknown"
 
 
+def _is_list_of_lists(node: ast.AST) -> bool:
+    return isinstance(node, ast.List) and any(isinstance(elt, ast.List) for elt in node.elts)
+
+
 def _unwrap_candidate_call(node: ast.AST) -> Tuple[Optional[ast.Call], bool]:
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
         if node.func.id == "candidate":
@@ -137,6 +463,7 @@ def _extract_io_contract(test_code: str) -> Dict[str, Any]:
     param_types: Dict[int, set[str]] = {}
     return_types: set[str] = set()
     order_required = False
+    list_of_lists = False
 
     for line in assert_lines:
         try:
@@ -159,12 +486,15 @@ def _extract_io_contract(test_code: str) -> Dict[str, Any]:
         return_types.add(ret_type)
         if ret_type in {"list", "tuple"} and left_order_sensitive:
             order_required = True
+        if isinstance(right, ast.List) and _is_list_of_lists(right):
+            list_of_lists = True
 
     return {
         "assert_count": len(assert_lines),
         "param_types": {idx: sorted(types) for idx, types in sorted(param_types.items())},
         "return_types": sorted(return_types),
         "order_required": order_required,
+        "list_of_lists": list_of_lists,
     }
 
 
@@ -231,6 +561,42 @@ def _extract_trace_candidates(task_meta: Dict[str, Any]) -> List[str]:
     return _dedupe_keep_order(candidates)
 
 
+def _extract_last_valid_code_from_trace(
+    task_meta: Dict[str, Any],
+    entry_point: Optional[str],
+) -> Optional[Dict[str, Any]]:
+    tool_trace = task_meta.get("tool_trace") if isinstance(task_meta, dict) else None
+    if not isinstance(tool_trace, dict) or not tool_trace:
+        return None
+    roles = list(tool_trace.keys())
+    for role in reversed(roles):
+        entries = tool_trace.get(role)
+        if not isinstance(entries, list):
+            continue
+        for entry in reversed(entries):
+            candidates: List[str] = []
+            _collect_code_candidates(entry, candidates)
+            for code in reversed(_dedupe_keep_order(candidates)):
+                normalized = eval_humaneval._normalize_completion(
+                    humaneval_postprocess._strip_redundant_def(
+                        humaneval_postprocess._extract_code_block(str(code)),
+                        entry_point,
+                    ),
+                    entry_point,
+                )
+                normalized = humaneval_postprocess._fix_missing_indents(normalized)
+                if not normalized.strip():
+                    continue
+                if _looks_like_error_text(normalized):
+                    continue
+                return {
+                    "code": normalized,
+                    "role": role,
+                    "tool_id": entry.get("tool_id") if isinstance(entry, dict) else None,
+                }
+    return None
+
+
 def _dedupe_keep_order(items: List[str]) -> List[str]:
     seen: set[str] = set()
     kept: List[str] = []
@@ -241,6 +607,129 @@ def _dedupe_keep_order(items: List[str]) -> List[str]:
         seen.add(key)
         kept.append(item)
     return kept
+
+
+def _parse_assert_line(assert_line: str) -> Optional[Dict[str, str]]:
+    try:
+        node = ast.parse(assert_line).body[0]
+    except SyntaxError:
+        return None
+    if not isinstance(node, ast.Assert):
+        return None
+    test = node.test
+    if not isinstance(test, ast.Compare) or len(test.ops) != 1 or not isinstance(test.ops[0], ast.Eq):
+        return None
+    left = test.left
+    right = test.comparators[0]
+    call, _ = _unwrap_candidate_call(left)
+    input_src = ""
+    if call is not None:
+        input_src = ", ".join(ast.unparse(arg) if hasattr(ast, "unparse") else "arg" for arg in call.args)
+    left_src = ast.unparse(left) if hasattr(ast, "unparse") else "candidate(...)"
+    right_src = ast.unparse(right) if hasattr(ast, "unparse") else "expected"
+    return {
+        "assert_src": assert_line.strip(),
+        "left_src": left_src,
+        "right_src": right_src,
+        "input_src": input_src,
+        "expected_src": right_src,
+    }
+
+
+def _build_assert_diagnostic_test(test_code: str, entry_point: str) -> str:
+    setup, asserts = _split_setup_and_asserts(test_code)
+    parsed_asserts: List[Dict[str, str]] = []
+    for line in asserts:
+        parsed = _parse_assert_line(line)
+        if parsed:
+            parsed_asserts.append(parsed)
+
+    lines: List[str] = []
+    if setup:
+        lines.append(setup)
+        lines.append("")
+    lines.append("def _mbpp_diag(candidate):")
+    lines.append("    import json")
+    lines.append("    def _emit(payload):")
+    lines.append(f"        print('{_MBPP_ASSERT_DIAG_MARKER}' + json.dumps(payload, ensure_ascii=True))")
+    if not parsed_asserts:
+        lines.append("    _emit({'ok': True})")
+    else:
+        for idx, parsed in enumerate(parsed_asserts, start=1):
+            left_src = parsed["left_src"]
+            right_src = parsed["right_src"]
+            input_src = parsed.get("input_src", "")
+            assert_src = parsed.get("assert_src", "")
+            expected_src = parsed.get("expected_src", "")
+            lines.append("    try:")
+            lines.append(f"        _actual = {left_src}")
+            lines.append(f"        _expected = {right_src}")
+            lines.append("        if _actual != _expected:")
+            lines.append("            _emit({")
+            lines.append("                'ok': False,")
+            lines.append(f"                'assert_index': {idx},")
+            lines.append(f"                'assert_src': {json.dumps(assert_src)},")
+            lines.append(f"                'input_src': {json.dumps(input_src)},")
+            lines.append(f"                'expected_src': {json.dumps(expected_src)},")
+            lines.append("                'actual': repr(_actual),")
+            lines.append("                'expected': repr(_expected),")
+            lines.append("                'actual_type': type(_actual).__name__,")
+            lines.append("                'expected_type': type(_expected).__name__,")
+            lines.append("            })")
+            lines.append("            return")
+            lines.append("    except Exception as e:")
+            lines.append("        _emit({")
+            lines.append("            'ok': False,")
+            lines.append(f"            'assert_index': {idx},")
+            lines.append(f"            'assert_src': {json.dumps(assert_src)},")
+            lines.append(f"            'input_src': {json.dumps(input_src)},")
+            lines.append(f"            'expected_src': {json.dumps(expected_src)},")
+            lines.append("            'error_type': type(e).__name__,")
+            lines.append("            'error_message': str(e),")
+            lines.append("        })")
+            lines.append("        return")
+        lines.append("    _emit({'ok': True})")
+    lines.append("")
+    lines.append("def test_check():")
+    lines.append(f"    _mbpp_diag({entry_point})")
+    lines.append("")
+    lines.append("test_check()")
+    return "\n".join(lines) + "\n"
+
+
+def _parse_assert_diag_output(text: str) -> Optional[Dict[str, Any]]:
+    if not text:
+        return None
+    for line in text.splitlines():
+        if _MBPP_ASSERT_DIAG_MARKER not in line:
+            continue
+        payload = line.split(_MBPP_ASSERT_DIAG_MARKER, 1)[-1].strip()
+        if not payload:
+            continue
+        try:
+            return json.loads(payload)
+        except Exception:
+            return None
+    return None
+
+
+def _diagnose_first_assert_failure(
+    prompt: str,
+    candidate: str,
+    test_code: str,
+    entry_point: Optional[str],
+    timeout_s: float,
+) -> Optional[Dict[str, Any]]:
+    if not entry_point:
+        return None
+    diag_test = _build_assert_diagnostic_test(test_code, entry_point)
+    program = eval_humaneval._build_program(prompt, candidate, diag_test, entry_point)
+    ok, stdout, stderr = _run_python_capture(program, timeout_s=timeout_s)
+    text = (stdout or "") + "\n" + (stderr or "")
+    diag = _parse_assert_diag_output(text)
+    if diag is None:
+        return {"ok": ok}
+    return diag
 
 
 def _build_mbpp_llm_client(config: Dict[str, Any]) -> Optional[Any]:
@@ -318,6 +807,22 @@ def _run_python_capture(code: str, timeout_s: float) -> Tuple[bool, str, str]:
         except subprocess.TimeoutExpired:
             return False, "", "timeout"
     return result.returncode == 0, result.stdout or "", result.stderr or ""
+
+
+def _syntax_precheck(
+    prompt: str,
+    completion: str,
+    entry_point: Optional[str],
+) -> Optional[str]:
+    if not completion or not completion.strip():
+        return None
+    program = eval_humaneval._build_program(prompt, completion, "", entry_point)
+    try:
+        compile(program, "<mbpp_precheck>", "exec")
+    except SyntaxError as exc:
+        lineno = f" line {exc.lineno}" if exc.lineno else ""
+        return f"{type(exc).__name__}: {exc.msg}{lineno}"
+    return None
 
 
 def _postprocess_completion(
@@ -430,6 +935,54 @@ def _full_test_pass(
     return ok
 
 
+def _evaluate_candidate_quality(
+    prompt: str,
+    candidate: str,
+    test_code: str,
+    entry_point: Optional[str],
+    timeout_s: float,
+) -> Dict[str, Any]:
+    syntax_error = _syntax_precheck(prompt, candidate, entry_point) if entry_point else None
+    full_ok = False
+    full_error = ""
+    if syntax_error:
+        full_error = str(syntax_error)
+    else:
+        program = eval_humaneval._build_program(prompt, candidate, test_code, entry_point)
+        ok, stdout, stderr = _run_python_capture(program, timeout_s=timeout_s)
+        full_ok = bool(ok)
+        if not ok:
+            full_error = (stderr or stdout or "execution failed").strip()
+    passed, total = _score_candidate_against_asserts(
+        prompt,
+        candidate,
+        test_code,
+        entry_point,
+        timeout_s=timeout_s,
+    )
+    return {
+        "syntax_error": syntax_error,
+        "passed": int(passed),
+        "total": int(total),
+        "full_ok": bool(full_ok),
+        "full_error": full_error,
+    }
+
+
+def _candidate_quality_regressed(new_quality: Dict[str, Any], base_quality: Dict[str, Any]) -> bool:
+    if new_quality.get("syntax_error"):
+        return True
+    base_total = int(base_quality.get("total") or 0)
+    base_passed = int(base_quality.get("passed") or 0)
+    new_total = int(new_quality.get("total") or 0)
+    new_passed = int(new_quality.get("passed") or 0)
+    if base_total > 0 and new_total == base_total and new_passed < base_passed:
+        return True
+    if bool(base_quality.get("full_ok")) and not bool(new_quality.get("full_ok")):
+        return True
+    return False
+
+
 def _postprocess_after_failure(
     prompt: str,
     candidate: str,
@@ -441,68 +994,127 @@ def _postprocess_after_failure(
 ) -> Tuple[str, Dict[str, Any]]:
     current = candidate
     attempts: List[Dict[str, Any]] = []
+    effective_prompt = _append_mbpp_assertion_context(prompt, test_code)
+    contract = _extract_io_contract(test_code)
     rounds = max(1, int(rounds))
+    prev_round_no_change = False
+    quality_cache: Dict[str, Dict[str, Any]] = {}
+
+    def _get_quality(candidate_text: str) -> Dict[str, Any]:
+        key = str(candidate_text or "")
+        cached = quality_cache.get(key)
+        if cached is not None:
+            return cached
+        quality = _evaluate_candidate_quality(
+            effective_prompt,
+            key,
+            test_code,
+            entry_point,
+            timeout_s=timeout_s,
+        )
+        quality_cache[key] = quality
+        return quality
+
     for round_idx in range(rounds):
+        round_changed = False
         if current:
             current = humaneval_postprocess._fix_missing_indents(str(current))
-        program = eval_humaneval._build_program(prompt, current, test_code, entry_point)
-        ok, stdout, stderr = _run_python_capture(program, timeout_s=timeout_s)
-        if ok:
+        current_quality = _get_quality(current)
+        if current_quality.get("full_ok"):
             return current, {"success": True, "attempts": attempts}
+        error_message = str(current_quality.get("full_error") or "execution failed").strip()
+        diag = _diagnose_first_assert_failure(
+            effective_prompt,
+            current,
+            test_code,
+            entry_point,
+            timeout_s=timeout_s,
+        )
+        failure_kind = _classify_failure_kind(error_message, diag=diag)
+        failure_context = _failure_context_message(
+            error_message,
+            test_code,
+            diag=diag,
+            contract=contract,
+            failure_kind=failure_kind,
+            strict_round=round_idx > 0,
+            force_logic_change=prev_round_no_change,
+        )
 
-        error_message = (stderr or stdout or "execution failed").strip()
-
-        if llm_client is not None and humaneval_postprocess._looks_like_assertion_error(error_message):
+        if llm_client is not None and _looks_like_repairable_runtime_failure(error_message):
+            llm_attempt: Dict[str, Any] = {
+                "round": round_idx + 1,
+                "repair_type": "assertion_llm",
+                "original_error": error_message,
+                "failure_kind": failure_kind,
+            }
             repaired_llm = humaneval_postprocess._repair_assertion_completion_with_llm(
                 llm_client=llm_client,
-                prompt=prompt,
+                prompt=effective_prompt,
                 completion=current,
                 test_code=test_code,
                 entry_point=entry_point,
                 error_message=error_message,
+                failure_context=failure_context,
             )
             if repaired_llm and repaired_llm != current:
                 repaired_llm = humaneval_postprocess._fix_missing_indents(repaired_llm)
-                program_llm = eval_humaneval._build_program(
-                    prompt, repaired_llm, test_code, entry_point
-                )
-                ok_llm, stdout_llm, stderr_llm = _run_python_capture(
-                    program_llm, timeout_s=timeout_s
-                )
-                attempts.append(
-                    {
-                        "round": round_idx + 1,
-                        "repair_type": "assertion_llm",
-                        "success": ok_llm,
-                        "original_error": error_message,
-                        "final_error": "" if ok_llm else (stderr_llm or stdout_llm or "execution failed"),
-                    }
-                )
-                if ok_llm:
-                    return repaired_llm, {"success": True, "attempts": attempts}
-                current = repaired_llm
-                error_message = (stderr_llm or stdout_llm or "execution failed").strip()
+                llm_quality = _get_quality(repaired_llm)
+                llm_attempt["candidate_score"] = f"{llm_quality['passed']}/{llm_quality['total']}"
+                if llm_quality.get("syntax_error"):
+                    llm_attempt["success"] = False
+                    llm_attempt["rejected"] = "syntax_error"
+                    llm_attempt["final_error"] = str(llm_quality.get("syntax_error") or "")
+                    attempts.append(llm_attempt)
+                elif _candidate_quality_regressed(llm_quality, current_quality):
+                    llm_attempt["success"] = False
+                    llm_attempt["rejected"] = "score_dropped"
+                    llm_attempt["final_error"] = "Rejected candidate because assert score regressed."
+                    attempts.append(llm_attempt)
+                elif _is_non_minimal_change(current, repaired_llm, current_quality, llm_quality):
+                    llm_attempt["success"] = False
+                    llm_attempt["rejected"] = "non_minimal_edit"
+                    llm_attempt["final_error"] = "Rejected candidate because structural edit is too large."
+                    attempts.append(llm_attempt)
+                else:
+                    ok_llm = bool(llm_quality.get("full_ok"))
+                    llm_attempt["success"] = ok_llm
+                    llm_attempt["final_error"] = "" if ok_llm else str(llm_quality.get("full_error") or "execution failed")
+                    attempts.append(llm_attempt)
+                    if ok_llm:
+                        return repaired_llm, {"success": True, "attempts": attempts}
+                    current = repaired_llm
+                    current_quality = llm_quality
+                    error_message = str(llm_quality.get("full_error") or "execution failed").strip()
+                    round_changed = True
+            else:
+                llm_attempt["success"] = False
+                llm_attempt["no_change"] = True
+                llm_attempt["final_error"] = error_message
+                attempts.append(llm_attempt)
 
-        param_names = humaneval_postprocess._extract_param_names_from_prompt(prompt, entry_point)
+        param_names = humaneval_postprocess._extract_param_names_from_prompt(effective_prompt, entry_point)
         repaired_text, post_meta = humaneval_postprocess._run_postprocess_tool_agent(
             completion=current,
-            prompt=prompt,
+            prompt=effective_prompt,
             entry_point=entry_point,
             stop_tokens=[],
             use_stop_tokens=False,
             param_names=param_names,
             enable_syntax_repair=True,
-            error_message=error_message,
+            error_message=failure_context,
         )
         attempt = {
             "round": round_idx + 1,
             "tools": post_meta.get("applied_tools", []),
             "original_error": error_message,
+            "failure_kind": failure_kind,
         }
         if not repaired_text or repaired_text == current:
             attempt["no_change"] = True
             attempts.append(attempt)
-            break
+            prev_round_no_change = not round_changed
+            continue
 
         normalized = eval_humaneval._normalize_completion(
             humaneval_postprocess._strip_redundant_def(
@@ -511,8 +1123,40 @@ def _postprocess_after_failure(
             ),
             entry_point,
         )
-        current = humaneval_postprocess._fix_missing_indents(normalized)
+        repaired_candidate = humaneval_postprocess._fix_missing_indents(normalized)
+        if not repaired_candidate.strip():
+            attempt["rejected"] = "empty_after_normalize"
+            attempts.append(attempt)
+            prev_round_no_change = not round_changed
+            continue
+
+        repaired_quality = _get_quality(repaired_candidate)
+        attempt["candidate_score"] = f"{repaired_quality['passed']}/{repaired_quality['total']}"
+        if repaired_quality.get("syntax_error"):
+            attempt["rejected"] = "syntax_error"
+            attempt["final_error"] = str(repaired_quality.get("syntax_error") or "")
+            attempts.append(attempt)
+            prev_round_no_change = not round_changed
+            continue
+        if _candidate_quality_regressed(repaired_quality, current_quality):
+            attempt["rejected"] = "score_dropped"
+            attempt["final_error"] = "Rejected candidate because assert score regressed."
+            attempts.append(attempt)
+            prev_round_no_change = not round_changed
+            continue
+        if _is_non_minimal_change(current, repaired_candidate, current_quality, repaired_quality):
+            attempt["rejected"] = "non_minimal_edit"
+            attempt["final_error"] = "Rejected candidate because structural edit is too large."
+            attempts.append(attempt)
+            prev_round_no_change = not round_changed
+            continue
+
+        current = repaired_candidate
         attempts.append(attempt)
+        round_changed = True
+        if repaired_quality.get("full_ok"):
+            return current, {"success": True, "attempts": attempts}
+        prev_round_no_change = not round_changed
 
     return current, {"success": False, "attempts": attempts}
 
@@ -621,6 +1265,7 @@ def _pick_best_candidate_for_task(
     prompt = str(task.get("prompt") or "")
     test_code = str(task.get("test") or "")
     entry_point = task.get("entry_point")
+    effective_prompt = _append_mbpp_assertion_context(prompt, test_code)
     contract = _extract_io_contract(test_code)
 
     all_candidates = _dedupe_keep_order([current_completion] + candidates)
@@ -630,6 +1275,8 @@ def _pick_best_candidate_for_task(
     scored: List[Tuple[int, int, int, float, int, str]] = []
     # tuple fields: (passed, total, full_ok_int, -penalty, -idx, candidate)
     for idx, cand in enumerate(all_candidates):
+        if _looks_like_error_text(cand):
+            continue
         normalized = eval_humaneval._normalize_completion(
             humaneval_postprocess._strip_redundant_def(
                 eval_humaneval._extract_code_block(str(cand)),
@@ -640,11 +1287,13 @@ def _pick_best_candidate_for_task(
         normalized = humaneval_postprocess._fix_missing_indents(normalized)
         if not (normalized or "").strip():
             continue
+        if _looks_like_error_text(normalized):
+            continue
         passed, total = _score_candidate_against_asserts(
-            prompt, normalized, test_code, entry_point, timeout_s=timeout_s
+            effective_prompt, normalized, test_code, entry_point, timeout_s=timeout_s
         )
         full_ok = 1 if (total > 0 and passed == total and _full_test_pass(
-            prompt,
+            effective_prompt,
             normalized,
             test_code,
             entry_point,
@@ -659,7 +1308,7 @@ def _pick_best_candidate_for_task(
 
         if not full_ok:
             repaired, _ = _postprocess_after_failure(
-                prompt,
+                effective_prompt,
                 normalized,
                 test_code,
                 entry_point,
@@ -668,10 +1317,10 @@ def _pick_best_candidate_for_task(
             )
             if repaired and repaired != normalized:
                 passed2, total2 = _score_candidate_against_asserts(
-                    prompt, repaired, test_code, entry_point, timeout_s=timeout_s
+                    effective_prompt, repaired, test_code, entry_point, timeout_s=timeout_s
                 )
                 full_ok2 = 1 if (total2 > 0 and passed2 == total2 and _full_test_pass(
-                    prompt,
+                    effective_prompt,
                     repaired,
                     test_code,
                     entry_point,
@@ -737,6 +1386,9 @@ def _postprocess_mbpp_solutions(
             continue
         task_meta = meta.get(name, {})
         completion = str(solutions.get(name, ""))
+        if _looks_like_error_text(completion):
+            completion = ""
+            solutions[name] = ""
         original_completion = completion
         if not completion.strip():
             fallback = _fallback_completion_from_trace(task, task_meta)
@@ -749,19 +1401,39 @@ def _postprocess_mbpp_solutions(
             continue
         prompt = str(task.get("prompt") or "")
         test_code = str(task.get("test") or "")
+        effective_prompt = _append_mbpp_assertion_context(prompt, test_code)
         entry_point = task.get("entry_point")
         fixed_completion = humaneval_postprocess._fix_missing_indents(completion)
         if fixed_completion and fixed_completion.strip() and fixed_completion != completion:
             completion = fixed_completion
             solutions[name] = completion
+        precheck_error = None
+        precheck_meta: Dict[str, Any] = {"attempted": False}
+        if entry_point:
+            precheck_error = _syntax_precheck(effective_prompt, completion, entry_point)
+        if precheck_error:
+            repaired, precheck_meta = _postprocess_completion(
+                effective_prompt,
+                completion,
+                entry_point,
+                rounds=1,
+                error_message=precheck_error,
+            )
+            precheck_meta["attempted"] = True
+            precheck_meta["error"] = precheck_error
+            precheck_meta["changed"] = repaired.strip() != completion.strip()
+            if repaired and repaired.strip():
+                completion = repaired
+                solutions[name] = completion
+        task_meta["mbpp_precheck"] = precheck_meta
         ok_before = True
         if entry_point and test_code:
-            ok_before = _full_test_pass(prompt, completion, test_code, entry_point, timeout_s=timeout_s)
+            ok_before = _full_test_pass(effective_prompt, completion, test_code, entry_point, timeout_s=timeout_s)
 
         post_meta: Dict[str, Any] = {"attempted": False, "success": ok_before}
         if not ok_before:
             repaired, post_meta = _postprocess_after_failure(
-                prompt,
+                effective_prompt,
                 completion,
                 test_code,
                 entry_point,
@@ -783,22 +1455,19 @@ def _postprocess_mbpp_solutions(
 
         ok_after = ok_before
         if entry_point and test_code:
-            ok_after = _full_test_pass(prompt, completion, test_code, entry_point, timeout_s=timeout_s)
+            ok_after = _full_test_pass(effective_prompt, completion, test_code, entry_point, timeout_s=timeout_s)
 
         if not ok_after:
-            candidates = _extract_trace_candidates(task_meta)
-            if candidates:
-                best, select_meta = _pick_best_candidate_for_task(
-                    task,
-                    completion,
-                    candidates,
-                    timeout_s=timeout_s,
-                )
-                if best and best.strip() and best.strip() != completion.strip():
-                    completion = best
+            last_pick = _extract_last_valid_code_from_trace(task_meta, entry_point)
+            if last_pick and last_pick.get("code"):
+                chosen = str(last_pick["code"])
+                if chosen.strip() and chosen.strip() != completion.strip():
+                    completion = chosen
                     solutions[name] = completion
-                    select_meta["changed"] = True
-                task_meta["mbpp_candidate_reselection"] = select_meta
+                    last_pick["changed"] = True
+                task_meta["mbpp_last_agent_fallback"] = last_pick
+            else:
+                task_meta["mbpp_last_agent_fallback"] = {"ok": False, "reason": "no_valid_code_in_trace"}
         meta[name] = task_meta
 
 
