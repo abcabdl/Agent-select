@@ -243,7 +243,7 @@ def run(inputs):
         return {
             "output": {
                 "code": code,
-                "success": bool(code and code.strip())
+                "success": bool(code and code.strip() and ("# Error" not in str(code)) and ("Error calling LLM" not in str(code)))
             }
         }
     except Exception as e:

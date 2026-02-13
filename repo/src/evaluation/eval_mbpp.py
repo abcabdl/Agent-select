@@ -35,6 +35,11 @@ _MBPP_REPAIR_STYLE_RULES_STRICT = (
     "Modify core computation to satisfy the failing assert exactly; "
     "avoid defensive programming and avoid introducing new exceptions."
 )
+_MBPP_INITIAL_GEN_RULES = (
+    "MBPP generation rules: prioritize passing shown asserts exactly. "
+    "Preserve required output order/type/shape. "
+    "Do not add broad input validation or defensive exception branches unless asserts require them."
+)
 
 
 def _strip_tasks_arg(argv: List[str]) -> List[str]:
@@ -146,6 +151,35 @@ def _append_mbpp_assertion_context(prompt: str, test_code: str) -> str:
     if "MBPP assertion focus" in base:
         return base
     return f"{base}\n\n{_comment_block(ctx)}\n"
+
+
+def _append_mbpp_initial_generation_rules(prompt: str, test_code: str) -> str:
+    base = _append_mbpp_assertion_context(prompt, test_code)
+    if _MBPP_INITIAL_GEN_RULES in base:
+        return base
+    return f"{base}\n{_comment_block(_MBPP_INITIAL_GEN_RULES)}\n"
+
+
+def _prepare_mbpp_tasks_for_generation(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    prepared: List[Dict[str, Any]] = []
+    for task in tasks:
+        if not isinstance(task, dict):
+            prepared.append(task)
+            continue
+        if str(task.get("source") or "").lower() != "mbpp":
+            prepared.append(task)
+            continue
+        copied = dict(task)
+        copied["prompt"] = _append_mbpp_initial_generation_rules(
+            str(task.get("prompt") or ""),
+            str(task.get("test") or ""),
+        )
+        prepared.append(copied)
+    return prepared
+
+
+def _normalize_trace_role(role: Any) -> str:
+    return str(role or "").strip().lower()
 
 
 def _format_param_types(contract: Dict[str, Any]) -> str:
@@ -564,12 +598,17 @@ def _extract_trace_candidates(task_meta: Dict[str, Any]) -> List[str]:
 def _extract_last_valid_code_from_trace(
     task_meta: Dict[str, Any],
     entry_point: Optional[str],
+    exclude_roles: Optional[set[str]] = None,
+    prompt: str = "",
 ) -> Optional[Dict[str, Any]]:
     tool_trace = task_meta.get("tool_trace") if isinstance(task_meta, dict) else None
     if not isinstance(tool_trace, dict) or not tool_trace:
         return None
+    blocked = {str(r).strip().lower() for r in (exclude_roles or set()) if str(r).strip()}
     roles = list(tool_trace.keys())
     for role in reversed(roles):
+        if _normalize_trace_role(role) in blocked:
+            continue
         entries = tool_trace.get(role)
         if not isinstance(entries, list):
             continue
@@ -584,11 +623,15 @@ def _extract_last_valid_code_from_trace(
                     ),
                     entry_point,
                 )
-                normalized = humaneval_postprocess._fix_missing_indents(normalized)
+                normalized = humaneval_postprocess._fix_missing_indents(normalized, entry_point)
                 if not normalized.strip():
                     continue
                 if _looks_like_error_text(normalized):
                     continue
+                if prompt:
+                    gate_error = _trace_candidate_gate_error(prompt, normalized, entry_point)
+                    if gate_error:
+                        continue
                 return {
                     "code": normalized,
                     "role": role,
@@ -825,6 +868,70 @@ def _syntax_precheck(
     return None
 
 
+def _repair_hard_gate_error(
+    prompt: str,
+    completion: str,
+    entry_point: Optional[str],
+) -> Optional[str]:
+    code = str(completion or "")
+    if not code.strip():
+        return "empty_after_normalize"
+    syntax_error = _syntax_precheck(prompt, code, entry_point)
+    if syntax_error:
+        return str(syntax_error)
+    if not entry_point:
+        return None
+    expected_params = humaneval_postprocess._extract_param_names_from_prompt(prompt, entry_point)
+    if not expected_params:
+        return None
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as exc:
+        lineno = f" line {exc.lineno}" if exc.lineno else ""
+        return f"{type(exc).__name__}: {exc.msg}{lineno}"
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == entry_point:
+            got_params = [arg.arg for arg in node.args.args]
+            if got_params and got_params != expected_params:
+                return (
+                    "entry_point_signature_mismatch: "
+                    f"expected ({', '.join(expected_params)}) got ({', '.join(got_params)})"
+                )
+    return None
+
+
+def _trace_candidate_gate_error(
+    prompt: str,
+    completion: str,
+    entry_point: Optional[str],
+) -> Optional[str]:
+    code = str(completion or "")
+    if not code.strip():
+        return "empty_after_normalize"
+    syntax_error = _syntax_precheck(prompt, code, entry_point)
+    if syntax_error:
+        return str(syntax_error)
+    if not entry_point:
+        return None
+    expected_params = humaneval_postprocess._extract_param_names_from_prompt(prompt, entry_point)
+    if not expected_params:
+        return None
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        # Body-only snippets are valid in this pipeline; syntax already checked above.
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == entry_point:
+            got_params = [arg.arg for arg in node.args.args]
+            if got_params and got_params != expected_params:
+                return (
+                    "entry_point_signature_mismatch: "
+                    f"expected ({', '.join(expected_params)}) got ({', '.join(got_params)})"
+                )
+    return None
+
+
 def _postprocess_completion(
     prompt: str,
     completion: str,
@@ -857,7 +964,11 @@ def _postprocess_completion(
         entry_point,
     )
     if normalized and normalized.strip():
-        current = normalized
+        gate_error = _repair_hard_gate_error(prompt, normalized, entry_point)
+        if gate_error:
+            post_meta["hard_gate_error"] = gate_error
+        else:
+            current = normalized
     post_meta["rounds"] = int(rounds)
     return current, post_meta
 
@@ -867,11 +978,16 @@ def _fallback_completion_from_trace(task: Dict[str, Any], task_meta: Dict[str, A
     if not isinstance(tool_trace, dict):
         return ""
     entry_point = task.get("entry_point")
-    fallback = humaneval_postprocess._extract_code_from_results(
-        {"tool_trace": tool_trace},
+    prompt = str(task.get("prompt") or "")
+    last_pick = _extract_last_valid_code_from_trace(
+        task_meta,
         entry_point,
+        exclude_roles={"checker", "code-testing"},
+        prompt=prompt,
     )
-    return str(fallback or "")
+    if not last_pick:
+        return ""
+    return str(last_pick.get("code") or "")
 
 
 def _build_assert_scoring_test(test_code: str, entry_point: str) -> Tuple[str, int]:
@@ -941,13 +1057,14 @@ def _evaluate_candidate_quality(
     test_code: str,
     entry_point: Optional[str],
     timeout_s: float,
+    small_tests_only: bool = False,
 ) -> Dict[str, Any]:
     syntax_error = _syntax_precheck(prompt, candidate, entry_point) if entry_point else None
     full_ok = False
     full_error = ""
     if syntax_error:
         full_error = str(syntax_error)
-    else:
+    elif not small_tests_only:
         program = eval_humaneval._build_program(prompt, candidate, test_code, entry_point)
         ok, stdout, stderr = _run_python_capture(program, timeout_s=timeout_s)
         full_ok = bool(ok)
@@ -960,6 +1077,10 @@ def _evaluate_candidate_quality(
         entry_point,
         timeout_s=timeout_s,
     )
+    if small_tests_only and not syntax_error:
+        full_ok = bool(total > 0 and passed == total)
+        if not full_ok:
+            full_error = f"AssertionError: assert score {passed}/{total}"
     return {
         "syntax_error": syntax_error,
         "passed": int(passed),
@@ -991,14 +1112,18 @@ def _postprocess_after_failure(
     timeout_s: float,
     rounds: int,
     llm_client: Optional[Any] = None,
+    small_tests_only: bool = False,
 ) -> Tuple[str, Dict[str, Any]]:
     current = candidate
     attempts: List[Dict[str, Any]] = []
-    effective_prompt = _append_mbpp_assertion_context(prompt, test_code)
+    execution_prompt = str(prompt or "")
+    llm_repair_prompt = _append_mbpp_assertion_context(execution_prompt, test_code)
     contract = _extract_io_contract(test_code)
     rounds = max(1, int(rounds))
     prev_round_no_change = False
     quality_cache: Dict[str, Dict[str, Any]] = {}
+    no_change_streak = 0
+    aggressive_relax_used = False
 
     def _get_quality(candidate_text: str) -> Dict[str, Any]:
         key = str(candidate_text or "")
@@ -1006,11 +1131,12 @@ def _postprocess_after_failure(
         if cached is not None:
             return cached
         quality = _evaluate_candidate_quality(
-            effective_prompt,
+            execution_prompt,
             key,
             test_code,
             entry_point,
             timeout_s=timeout_s,
+            small_tests_only=small_tests_only,
         )
         quality_cache[key] = quality
         return quality
@@ -1018,13 +1144,17 @@ def _postprocess_after_failure(
     for round_idx in range(rounds):
         round_changed = False
         if current:
-            current = humaneval_postprocess._fix_missing_indents(str(current))
+            current = humaneval_postprocess._fix_missing_indents(str(current), entry_point)
         current_quality = _get_quality(current)
         if current_quality.get("full_ok"):
             return current, {"success": True, "attempts": attempts}
+        passed_now = int(current_quality.get("passed") or 0)
+        total_now = int(current_quality.get("total") or 0)
+        near_full_stuck = total_now > 0 and passed_now == max(0, total_now - 1)
+        aggressive_mode = (no_change_streak >= 1 or near_full_stuck) and not aggressive_relax_used
         error_message = str(current_quality.get("full_error") or "execution failed").strip()
         diag = _diagnose_first_assert_failure(
-            effective_prompt,
+            execution_prompt,
             current,
             test_code,
             entry_point,
@@ -1040,6 +1170,12 @@ def _postprocess_after_failure(
             strict_round=round_idx > 0,
             force_logic_change=prev_round_no_change,
         )
+        if aggressive_mode:
+            failure_context = (
+                f"{failure_context}\n"
+                "Aggressive targeted repair mode: patch exactly the first failing assert behavior. "
+                "Prefer one focused logic edit over broad refactor."
+            )
 
         if llm_client is not None and _looks_like_repairable_runtime_failure(error_message):
             llm_attempt: Dict[str, Any] = {
@@ -1050,7 +1186,7 @@ def _postprocess_after_failure(
             }
             repaired_llm = humaneval_postprocess._repair_assertion_completion_with_llm(
                 llm_client=llm_client,
-                prompt=effective_prompt,
+                prompt=llm_repair_prompt,
                 completion=current,
                 test_code=test_code,
                 entry_point=entry_point,
@@ -1058,45 +1194,55 @@ def _postprocess_after_failure(
                 failure_context=failure_context,
             )
             if repaired_llm and repaired_llm != current:
-                repaired_llm = humaneval_postprocess._fix_missing_indents(repaired_llm)
-                llm_quality = _get_quality(repaired_llm)
-                llm_attempt["candidate_score"] = f"{llm_quality['passed']}/{llm_quality['total']}"
-                if llm_quality.get("syntax_error"):
+                repaired_llm = humaneval_postprocess._fix_missing_indents(repaired_llm, entry_point)
+                gate_error = _repair_hard_gate_error(execution_prompt, repaired_llm, entry_point)
+                if gate_error:
                     llm_attempt["success"] = False
-                    llm_attempt["rejected"] = "syntax_error"
-                    llm_attempt["final_error"] = str(llm_quality.get("syntax_error") or "")
-                    attempts.append(llm_attempt)
-                elif _candidate_quality_regressed(llm_quality, current_quality):
-                    llm_attempt["success"] = False
-                    llm_attempt["rejected"] = "score_dropped"
-                    llm_attempt["final_error"] = "Rejected candidate because assert score regressed."
-                    attempts.append(llm_attempt)
-                elif _is_non_minimal_change(current, repaired_llm, current_quality, llm_quality):
-                    llm_attempt["success"] = False
-                    llm_attempt["rejected"] = "non_minimal_edit"
-                    llm_attempt["final_error"] = "Rejected candidate because structural edit is too large."
+                    llm_attempt["rejected"] = "hard_gate_failed"
+                    llm_attempt["final_error"] = gate_error
                     attempts.append(llm_attempt)
                 else:
-                    ok_llm = bool(llm_quality.get("full_ok"))
-                    llm_attempt["success"] = ok_llm
-                    llm_attempt["final_error"] = "" if ok_llm else str(llm_quality.get("full_error") or "execution failed")
-                    attempts.append(llm_attempt)
-                    if ok_llm:
-                        return repaired_llm, {"success": True, "attempts": attempts}
-                    current = repaired_llm
-                    current_quality = llm_quality
-                    error_message = str(llm_quality.get("full_error") or "execution failed").strip()
-                    round_changed = True
+                    llm_quality = _get_quality(repaired_llm)
+                    llm_attempt["candidate_score"] = f"{llm_quality['passed']}/{llm_quality['total']}"
+                    if llm_quality.get("syntax_error"):
+                        llm_attempt["success"] = False
+                        llm_attempt["rejected"] = "syntax_error"
+                        llm_attempt["final_error"] = str(llm_quality.get("syntax_error") or "")
+                        attempts.append(llm_attempt)
+                    elif _candidate_quality_regressed(llm_quality, current_quality):
+                        llm_attempt["success"] = False
+                        llm_attempt["rejected"] = "score_dropped"
+                        llm_attempt["final_error"] = "Rejected candidate because assert score regressed."
+                        attempts.append(llm_attempt)
+                    elif _is_non_minimal_change(current, repaired_llm, current_quality, llm_quality) and not aggressive_mode:
+                        llm_attempt["success"] = False
+                        llm_attempt["rejected"] = "non_minimal_edit"
+                        llm_attempt["final_error"] = "Rejected candidate because structural edit is too large."
+                        attempts.append(llm_attempt)
+                    else:
+                        if _is_non_minimal_change(current, repaired_llm, current_quality, llm_quality) and aggressive_mode:
+                            llm_attempt["gate_relaxed"] = "non_minimal_edit_once"
+                            aggressive_relax_used = True
+                        ok_llm = bool(llm_quality.get("full_ok"))
+                        llm_attempt["success"] = ok_llm
+                        llm_attempt["final_error"] = "" if ok_llm else str(llm_quality.get("full_error") or "execution failed")
+                        attempts.append(llm_attempt)
+                        if ok_llm:
+                            return repaired_llm, {"success": True, "attempts": attempts}
+                        current = repaired_llm
+                        current_quality = llm_quality
+                        error_message = str(llm_quality.get("full_error") or "execution failed").strip()
+                        round_changed = True
             else:
                 llm_attempt["success"] = False
                 llm_attempt["no_change"] = True
                 llm_attempt["final_error"] = error_message
                 attempts.append(llm_attempt)
 
-        param_names = humaneval_postprocess._extract_param_names_from_prompt(effective_prompt, entry_point)
+        param_names = humaneval_postprocess._extract_param_names_from_prompt(execution_prompt, entry_point)
         repaired_text, post_meta = humaneval_postprocess._run_postprocess_tool_agent(
             completion=current,
-            prompt=effective_prompt,
+            prompt=execution_prompt,
             entry_point=entry_point,
             stop_tokens=[],
             use_stop_tokens=False,
@@ -1107,13 +1253,17 @@ def _postprocess_after_failure(
         attempt = {
             "round": round_idx + 1,
             "tools": post_meta.get("applied_tools", []),
+            "attempted_tools": post_meta.get("attempted_tools", []),
             "original_error": error_message,
             "failure_kind": failure_kind,
         }
+        if isinstance(post_meta.get("tool_errors"), dict) and post_meta.get("tool_errors"):
+            attempt["tool_errors"] = post_meta.get("tool_errors")
         if not repaired_text or repaired_text == current:
             attempt["no_change"] = True
             attempts.append(attempt)
             prev_round_no_change = not round_changed
+            no_change_streak = no_change_streak + 1 if prev_round_no_change else 0
             continue
 
         normalized = eval_humaneval._normalize_completion(
@@ -1123,11 +1273,20 @@ def _postprocess_after_failure(
             ),
             entry_point,
         )
-        repaired_candidate = humaneval_postprocess._fix_missing_indents(normalized)
+        repaired_candidate = humaneval_postprocess._fix_missing_indents(normalized, entry_point)
         if not repaired_candidate.strip():
             attempt["rejected"] = "empty_after_normalize"
             attempts.append(attempt)
             prev_round_no_change = not round_changed
+            no_change_streak = no_change_streak + 1 if prev_round_no_change else 0
+            continue
+        gate_error = _repair_hard_gate_error(execution_prompt, repaired_candidate, entry_point)
+        if gate_error:
+            attempt["rejected"] = "hard_gate_failed"
+            attempt["final_error"] = gate_error
+            attempts.append(attempt)
+            prev_round_no_change = not round_changed
+            no_change_streak = no_change_streak + 1 if prev_round_no_change else 0
             continue
 
         repaired_quality = _get_quality(repaired_candidate)
@@ -1137,19 +1296,25 @@ def _postprocess_after_failure(
             attempt["final_error"] = str(repaired_quality.get("syntax_error") or "")
             attempts.append(attempt)
             prev_round_no_change = not round_changed
+            no_change_streak = no_change_streak + 1 if prev_round_no_change else 0
             continue
         if _candidate_quality_regressed(repaired_quality, current_quality):
             attempt["rejected"] = "score_dropped"
             attempt["final_error"] = "Rejected candidate because assert score regressed."
             attempts.append(attempt)
             prev_round_no_change = not round_changed
+            no_change_streak = no_change_streak + 1 if prev_round_no_change else 0
             continue
-        if _is_non_minimal_change(current, repaired_candidate, current_quality, repaired_quality):
+        if _is_non_minimal_change(current, repaired_candidate, current_quality, repaired_quality) and not aggressive_mode:
             attempt["rejected"] = "non_minimal_edit"
             attempt["final_error"] = "Rejected candidate because structural edit is too large."
             attempts.append(attempt)
             prev_round_no_change = not round_changed
+            no_change_streak = no_change_streak + 1 if prev_round_no_change else 0
             continue
+        if _is_non_minimal_change(current, repaired_candidate, current_quality, repaired_quality) and aggressive_mode:
+            attempt["gate_relaxed"] = "non_minimal_edit_once"
+            aggressive_relax_used = True
 
         current = repaired_candidate
         attempts.append(attempt)
@@ -1157,219 +1322,9 @@ def _postprocess_after_failure(
         if repaired_quality.get("full_ok"):
             return current, {"success": True, "attempts": attempts}
         prev_round_no_change = not round_changed
+        no_change_streak = no_change_streak + 1 if prev_round_no_change else 0
 
     return current, {"success": False, "attempts": attempts}
-
-
-def _literal_return_type(token: str) -> str:
-    token = token.strip()
-    if token == "None":
-        return "none"
-    if token in {"[]", "list()"}:
-        return "list"
-    if token in {"{}", "dict()"}:
-        return "dict"
-    if token in {"()", "tuple()"}:
-        return "tuple"
-    if token in {"False", "True", "bool()"}:
-        return "bool"
-    if re.fullmatch(r"-?\d+", token):
-        return "int"
-    if re.fullmatch(r"-?\d+\.\d+", token):
-        return "float"
-    if token.startswith(("'", '"')):
-        return "str"
-    return "unknown"
-
-
-def _typeerror_risk_penalty(code: str) -> float:
-    if not code:
-        return 0.0
-    try:
-        tree = ast.parse(code)
-    except SyntaxError:
-        return 0.0
-
-    penalty = 0.0
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            if node.func.id == "isinstance" and len(node.args) >= 2:
-                type_arg = node.args[1]
-                if isinstance(type_arg, ast.Constant) and isinstance(type_arg.value, str):
-                    penalty += 3.0
-                if isinstance(type_arg, ast.Call) and isinstance(type_arg.func, ast.Name):
-                    if type_arg.func.id in {"list", "dict", "set", "tuple", "str", "int", "float", "bool"}:
-                        penalty += 2.5
-            if node.func.id == "set" and node.args:
-                arg = node.args[0]
-                if isinstance(arg, ast.List) and any(
-                    isinstance(elt, (ast.List, ast.Dict, ast.Set)) for elt in arg.elts
-                ):
-                    penalty += 3.0
-        if isinstance(node, ast.Set):
-            if any(isinstance(elt, (ast.List, ast.Dict, ast.Set)) for elt in node.elts):
-                penalty += 3.0
-        if isinstance(node, ast.Dict):
-            if any(isinstance(k, (ast.List, ast.Dict, ast.Set)) for k in node.keys if k is not None):
-                penalty += 3.0
-        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-            if isinstance(node.left, ast.Constant) and isinstance(node.right, ast.Constant):
-                left_is_str = isinstance(node.left.value, str)
-                right_is_str = isinstance(node.right.value, str)
-                left_is_num = isinstance(node.left.value, (int, float))
-                right_is_num = isinstance(node.right.value, (int, float))
-                if (left_is_str and right_is_num) or (right_is_str and left_is_num):
-                    penalty += 1.5
-    return penalty
-
-
-def _defensive_penalty(code: str, contract: Dict[str, Any]) -> float:
-    head = "\n".join((code or "").splitlines()[:20])
-    penalty = 0.0
-    if re.search(r"\bisinstance\s*\(", head):
-        penalty += 2.0
-    if re.search(r"\bis\s+None\b", head):
-        penalty += 1.0
-    if re.search(r"\bif\s+not\s+[A-Za-z_][A-Za-z0-9_]*\b", head):
-        penalty += 0.5
-
-    expected = set(contract.get("return_types") or [])
-    for m in re.finditer(r"^\s*return\s+(.+)$", head, flags=re.MULTILINE):
-        ret_type = _literal_return_type(m.group(1).strip())
-        if ret_type != "unknown" and expected and ret_type not in expected:
-            penalty += 1.5
-    return penalty
-
-
-def _set_list_order_penalty(code: str, contract: Dict[str, Any]) -> float:
-    if not contract.get("order_required"):
-        return 0.0
-    text = code or ""
-    patterns = [
-        r"list\s*\(\s*set\s*\(",
-        r"set\s*\([^)]*\)\s*\.intersection\s*\(",
-        r"set\s*\([^)]*\)\s*&\s*set\s*\(",
-    ]
-    for p in patterns:
-        if re.search(p, text):
-            return 4.0
-    return 0.0
-
-
-def _pick_best_candidate_for_task(
-    task: Dict[str, Any],
-    current_completion: str,
-    candidates: List[str],
-    timeout_s: float,
-) -> Tuple[str, Dict[str, Any]]:
-    prompt = str(task.get("prompt") or "")
-    test_code = str(task.get("test") or "")
-    entry_point = task.get("entry_point")
-    effective_prompt = _append_mbpp_assertion_context(prompt, test_code)
-    contract = _extract_io_contract(test_code)
-
-    all_candidates = _dedupe_keep_order([current_completion] + candidates)
-    if not all_candidates:
-        return current_completion, {"contract": contract, "candidate_count": 0}
-
-    scored: List[Tuple[int, int, int, float, int, str]] = []
-    # tuple fields: (passed, total, full_ok_int, -penalty, -idx, candidate)
-    for idx, cand in enumerate(all_candidates):
-        if _looks_like_error_text(cand):
-            continue
-        normalized = eval_humaneval._normalize_completion(
-            humaneval_postprocess._strip_redundant_def(
-                eval_humaneval._extract_code_block(str(cand)),
-                entry_point,
-            ),
-            entry_point,
-        )
-        normalized = humaneval_postprocess._fix_missing_indents(normalized)
-        if not (normalized or "").strip():
-            continue
-        if _looks_like_error_text(normalized):
-            continue
-        passed, total = _score_candidate_against_asserts(
-            effective_prompt, normalized, test_code, entry_point, timeout_s=timeout_s
-        )
-        full_ok = 1 if (total > 0 and passed == total and _full_test_pass(
-            effective_prompt,
-            normalized,
-            test_code,
-            entry_point,
-            timeout_s=timeout_s,
-        )) else 0
-        penalty = (
-            _defensive_penalty(normalized, contract)
-            + _set_list_order_penalty(normalized, contract)
-            + _typeerror_risk_penalty(normalized)
-        )
-        scored.append((passed, total, full_ok, -penalty, -idx, normalized))
-
-        if not full_ok:
-            repaired, _ = _postprocess_after_failure(
-                effective_prompt,
-                normalized,
-                test_code,
-                entry_point,
-                timeout_s=timeout_s,
-                rounds=_MBPP_POSTPROCESS_ROUNDS,
-            )
-            if repaired and repaired != normalized:
-                passed2, total2 = _score_candidate_against_asserts(
-                    effective_prompt, repaired, test_code, entry_point, timeout_s=timeout_s
-                )
-                full_ok2 = 1 if (total2 > 0 and passed2 == total2 and _full_test_pass(
-                    effective_prompt,
-                    repaired,
-                    test_code,
-                    entry_point,
-                    timeout_s=timeout_s,
-                )) else 0
-                penalty2 = (
-                    _defensive_penalty(repaired, contract)
-                    + _set_list_order_penalty(repaired, contract)
-                    + _typeerror_risk_penalty(repaired)
-                )
-                scored.append((passed2, total2, full_ok2, -penalty2, -idx, repaired))
-
-    if not scored:
-        return current_completion, {"contract": contract, "candidate_count": len(all_candidates)}
-
-    scored.sort(reverse=True)
-    best = scored[0][5]
-    meta = {
-        "contract": contract,
-        "candidate_count": len(all_candidates),
-        "selected_score": {
-            "passed": scored[0][0],
-            "total": scored[0][1],
-            "full_ok": bool(scored[0][2]),
-            "penalty": -scored[0][3],
-        },
-    }
-    return best, meta
-
-
-def _post_select_mbpp_solutions(
-    tasks: List[Dict[str, Any]],
-    solutions: Dict[str, str],
-    meta: Dict[str, Dict[str, Any]],
-    timeout_s: float,
-) -> None:
-    task_by_name = {str(t.get("name") or t.get("task_id") or ""): t for t in tasks}
-    for name, task in task_by_name.items():
-        if str(task.get("source") or "").lower() != "mbpp":
-            continue
-        current = str(solutions.get(name, ""))
-        if not current.strip():
-            continue
-        task_meta = meta.get(name, {})
-        task_meta["mbpp_candidate_reselection"] = {
-            "candidate_count": 1,
-            "selected_score": {},
-        }
-        meta[name] = task_meta
 
 
 def _postprocess_mbpp_solutions(
@@ -1401,19 +1356,67 @@ def _postprocess_mbpp_solutions(
             continue
         prompt = str(task.get("prompt") or "")
         test_code = str(task.get("test") or "")
-        effective_prompt = _append_mbpp_assertion_context(prompt, test_code)
         entry_point = task.get("entry_point")
-        fixed_completion = humaneval_postprocess._fix_missing_indents(completion)
+        non_checker_pick = _extract_last_valid_code_from_trace(
+            task_meta,
+            entry_point,
+            exclude_roles={"checker", "code-testing"},
+            prompt=prompt,
+        )
+        if non_checker_pick and str(non_checker_pick.get("code") or "").strip():
+            preferred = str(non_checker_pick.get("code") or "")
+            if preferred.strip() and preferred.strip() != completion.strip():
+                preferred_ok = True
+                preferred_reason = ""
+                if entry_point and test_code:
+                    current_passed, current_total = _score_candidate_against_asserts(
+                        prompt,
+                        completion,
+                        test_code,
+                        entry_point,
+                        timeout_s=timeout_s,
+                    )
+                    preferred_passed, preferred_total = _score_candidate_against_asserts(
+                        prompt,
+                        preferred,
+                        test_code,
+                        entry_point,
+                        timeout_s=timeout_s,
+                    )
+                    if current_total == 0:
+                        preferred_ok = preferred_total == 0
+                    else:
+                        preferred_ok = (
+                            preferred_total == current_total
+                            and preferred_passed > current_passed
+                        )
+                    if not preferred_ok:
+                        preferred_reason = (
+                            "small_score_regressed: "
+                            f"current={current_passed}/{current_total}, "
+                            f"preferred={preferred_passed}/{preferred_total}"
+                        )
+                if preferred_ok:
+                    completion = preferred
+                    solutions[name] = completion
+                    task_meta["extracted_from"] = "tool_trace_non_checker_preferred"
+                else:
+                    task_meta["non_checker_preferred_rejected"] = {
+                        "reason": preferred_reason or "small_score_regressed",
+                        "role": non_checker_pick.get("role"),
+                        "tool_id": non_checker_pick.get("tool_id"),
+                    }
+        fixed_completion = humaneval_postprocess._fix_missing_indents(completion, entry_point)
         if fixed_completion and fixed_completion.strip() and fixed_completion != completion:
             completion = fixed_completion
             solutions[name] = completion
         precheck_error = None
         precheck_meta: Dict[str, Any] = {"attempted": False}
         if entry_point:
-            precheck_error = _syntax_precheck(effective_prompt, completion, entry_point)
+            precheck_error = _syntax_precheck(prompt, completion, entry_point)
         if precheck_error:
             repaired, precheck_meta = _postprocess_completion(
-                effective_prompt,
+                prompt,
                 completion,
                 entry_point,
                 rounds=1,
@@ -1426,20 +1429,34 @@ def _postprocess_mbpp_solutions(
                 completion = repaired
                 solutions[name] = completion
         task_meta["mbpp_precheck"] = precheck_meta
-        ok_before = True
+        small_passed = 0
+        small_total = 0
+        small_ok_before = True
         if entry_point and test_code:
-            ok_before = _full_test_pass(effective_prompt, completion, test_code, entry_point, timeout_s=timeout_s)
+            small_passed, small_total = _score_candidate_against_asserts(
+                prompt,
+                completion,
+                test_code,
+                entry_point,
+                timeout_s=timeout_s,
+            )
+            small_ok_before = bool(small_total == 0 or small_passed == small_total)
 
-        post_meta: Dict[str, Any] = {"attempted": False, "success": ok_before}
-        if not ok_before:
+        post_meta: Dict[str, Any] = {
+            "attempted": False,
+            "success": small_ok_before,
+            "small_score_before": f"{small_passed}/{small_total}",
+        }
+        if not small_ok_before:
             repaired, post_meta = _postprocess_after_failure(
-                effective_prompt,
+                prompt,
                 completion,
                 test_code,
                 entry_point,
                 timeout_s=timeout_s,
                 rounds=rounds,
                 llm_client=llm_client,
+                small_tests_only=True,
             )
             if repaired and repaired.strip():
                 completion = repaired
@@ -1453,21 +1470,69 @@ def _postprocess_mbpp_solutions(
             "changed": completion.strip() != original_completion.strip(),
         }
 
-        ok_after = ok_before
+        ok_after = True
         if entry_point and test_code:
-            ok_after = _full_test_pass(effective_prompt, completion, test_code, entry_point, timeout_s=timeout_s)
+            ok_after = _full_test_pass(
+                prompt,
+                completion,
+                test_code,
+                entry_point,
+                timeout_s=timeout_s,
+            )
 
         if not ok_after:
-            last_pick = _extract_last_valid_code_from_trace(task_meta, entry_point)
+            last_pick = _extract_last_valid_code_from_trace(
+                task_meta,
+                entry_point,
+                exclude_roles={"checker", "code-testing"},
+                prompt=prompt,
+            )
             if last_pick and last_pick.get("code"):
                 chosen = str(last_pick["code"])
                 if chosen.strip() and chosen.strip() != completion.strip():
-                    completion = chosen
-                    solutions[name] = completion
-                    last_pick["changed"] = True
+                    fallback_ok = True
+                    fallback_reason = ""
+                    if entry_point and test_code:
+                        current_passed, current_total = _score_candidate_against_asserts(
+                            prompt,
+                            completion,
+                            test_code,
+                            entry_point,
+                            timeout_s=timeout_s,
+                        )
+                        chosen_passed, chosen_total = _score_candidate_against_asserts(
+                            prompt,
+                            chosen,
+                            test_code,
+                            entry_point,
+                            timeout_s=timeout_s,
+                        )
+                        if current_total == 0:
+                            fallback_ok = chosen_total == 0
+                        else:
+                            fallback_ok = (
+                                chosen_total == current_total
+                                and chosen_passed > current_passed
+                            )
+                        if not fallback_ok:
+                            fallback_reason = (
+                                "small_score_regressed: "
+                                f"current={current_passed}/{current_total}, "
+                                f"fallback={chosen_passed}/{chosen_total}"
+                            )
+                    if fallback_ok:
+                        completion = chosen
+                        solutions[name] = completion
+                        last_pick["changed"] = True
+                    else:
+                        last_pick["changed"] = False
+                        last_pick["rejected_reason"] = fallback_reason or "small_score_regressed"
                 task_meta["mbpp_last_agent_fallback"] = last_pick
             else:
-                task_meta["mbpp_last_agent_fallback"] = {"ok": False, "reason": "no_valid_code_in_trace"}
+                task_meta["mbpp_last_agent_fallback"] = {
+                    "ok": False,
+                    "reason": "no_valid_non_checker_code_in_trace",
+                }
         meta[name] = task_meta
 
 
@@ -1489,10 +1554,20 @@ def _patch_eval_humaneval_for_mbpp() -> None:
         timeout_s = float(kwargs.get("tool_timeout_s") or 5.0)
         llm_client = _build_mbpp_llm_client(kwargs)
 
-        solutions, meta = original_orchestrator(*args, **kwargs)
-        if isinstance(tasks, list) and isinstance(solutions, dict) and isinstance(meta, dict):
+        call_args = list(args)
+        call_kwargs = dict(kwargs)
+        prepared_tasks = _prepare_mbpp_tasks_for_generation(tasks) if isinstance(tasks, list) else tasks
+        if isinstance(prepared_tasks, list):
+            if "tasks" in call_kwargs:
+                call_kwargs["tasks"] = prepared_tasks
+            elif call_args:
+                call_args[0] = prepared_tasks
+
+        solutions, meta = original_orchestrator(*call_args, **call_kwargs)
+        effective_tasks = prepared_tasks if isinstance(prepared_tasks, list) else tasks
+        if isinstance(effective_tasks, list) and isinstance(solutions, dict) and isinstance(meta, dict):
             _postprocess_mbpp_solutions(
-                tasks,
+                effective_tasks,
                 solutions,
                 meta,
                 rounds=_MBPP_POSTPROCESS_ROUNDS,
@@ -1501,7 +1576,7 @@ def _patch_eval_humaneval_for_mbpp() -> None:
             )
             if out_path:
                 with open(str(out_path), "w", encoding="utf-8") as f:
-                    for task in tasks:
+                    for task in effective_tasks:
                         name = str(task.get("name") or task.get("task_id") or "")
                         completion = str(solutions.get(name, ""))
                         f.write(json.dumps({"name": name, "completion": completion}, ensure_ascii=True) + "\n")
@@ -1517,11 +1592,21 @@ def _patch_eval_humaneval_for_mbpp() -> None:
         timeout_s = 5.0
         llm_client = _build_mbpp_llm_client(kwargs)
 
-        solutions = original_local_generator(*args, **kwargs)
-        if isinstance(tasks, list) and isinstance(solutions, dict):
+        call_args = list(args)
+        call_kwargs = dict(kwargs)
+        prepared_tasks = _prepare_mbpp_tasks_for_generation(tasks) if isinstance(tasks, list) else tasks
+        if isinstance(prepared_tasks, list):
+            if "tasks" in call_kwargs:
+                call_kwargs["tasks"] = prepared_tasks
+            elif call_args:
+                call_args[0] = prepared_tasks
+
+        solutions = original_local_generator(*call_args, **call_kwargs)
+        effective_tasks = prepared_tasks if isinstance(prepared_tasks, list) else tasks
+        if isinstance(effective_tasks, list) and isinstance(solutions, dict):
             meta: Dict[str, Dict[str, Any]] = {}
             _postprocess_mbpp_solutions(
-                tasks,
+                effective_tasks,
                 solutions,
                 meta,
                 rounds=_MBPP_POSTPROCESS_ROUNDS,
@@ -1530,7 +1615,7 @@ def _patch_eval_humaneval_for_mbpp() -> None:
             )
             if out_path:
                 with open(str(out_path), "w", encoding="utf-8") as f:
-                    for task in tasks:
+                    for task in effective_tasks:
                         name = str(task.get("name") or task.get("task_id") or "")
                         completion = str(solutions.get(name, ""))
                         f.write(json.dumps({"name": name, "completion": completion}, ensure_ascii=True) + "\n")

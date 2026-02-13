@@ -313,7 +313,7 @@ def run(inputs):
     
     # 最终格式验证和修正
     code = _format_and_validate(code)
-    return {"output": {"code": code, "success": bool(code and code.strip())}}
+    return {"output": {"code": code, "success": bool(code and code.strip() and ("# Error" not in str(code)) and ("Error calling LLM" not in str(code)))}}
 
 def run(inputs):
     """
@@ -377,4 +377,4 @@ def run(inputs):
     
     # 最终格式验证和修正
     code = _format_and_validate(code)
-    return {"output": {"code": code, "success": bool(code and code.strip())}}
+    return {"output": {"code": code, "success": bool(code and code.strip() and ("# Error" not in str(code)) and ("Error calling LLM" not in str(code)))}}

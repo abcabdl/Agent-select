@@ -8,6 +8,8 @@ from pydantic import BaseModel, ValidationError
 class PlannerOutput(BaseModel):
     steps: List[str]
     acceptance_criteria: List[str]
+    ready_to_handoff: Optional[bool] = None
+    next_role: Optional[str] = None
 
 
 class ResearcherOutput(BaseModel):

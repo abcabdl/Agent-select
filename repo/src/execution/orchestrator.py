@@ -154,8 +154,16 @@ class RealLLMClient:
 
     _ROLE_SCHEMAS = {
         "planner": {
-            "fields": {"steps": "list[str]", "acceptance_criteria": "list[str]"},
-            "guidance": "Provide a concise task plan and acceptance criteria.",
+            "fields": {
+                "steps": "list[str]",
+                "acceptance_criteria": "list[str]",
+                "ready_to_handoff": "bool (optional, true when planning is sufficient)",
+                "next_role": "str (optional, suggested next role when handing off)",
+            },
+            "guidance": (
+                "Provide a concise task plan and acceptance criteria. "
+                "Set ready_to_handoff=true only when the plan is sufficient for execution."
+            ),
         },
         "researcher": {
             "fields": {"search_queries": "list[str]", "sources": "list[str]", "evidence_points": "list[str]"},
@@ -569,6 +577,48 @@ def _truncate_text(text: Optional[str], max_chars: int) -> str:
     return value[: max_chars - 3] + "..."
 
 
+def _extract_assertion_hints(message: Optional[str], max_items: int = 2) -> List[str]:
+    if not message:
+        return []
+    hints: List[str] = []
+    for line in str(message).splitlines():
+        text = line.strip()
+        if not text:
+            continue
+        if "assert" in text and "candidate" in text:
+            hints.append(text)
+            if len(hints) >= max_items:
+                break
+    return hints
+
+
+def _summarize_failure(error_message: Optional[str], test_error: Optional[str], max_chars: int = 700) -> str:
+    parts: List[str] = []
+    if test_error:
+        parts.append(f"test_error={_truncate_text(str(test_error), max_chars=max_chars)}")
+    if error_message and error_message != test_error:
+        parts.append(f"runtime_error={_truncate_text(str(error_message), max_chars=max_chars)}")
+    return " | ".join(parts)
+
+
+def _is_likely_error_text(code: str) -> bool:
+    text = str(code or "").strip()
+    if not text:
+        return False
+    lowered = text.lower()
+    if text.startswith("# Error") or text.startswith("Error:"):
+        return True
+    if "traceback (most recent call last)" in lowered:
+        return True
+    if "error calling llm" in lowered:
+        return True
+    if "timed out" in lowered or "timeout" in lowered:
+        return True
+    if text.startswith("Exception:"):
+        return True
+    return False
+
+
 def _append_diagnostics_to_task(task_text: str, role_context: Dict[str, Any]) -> str:
     diagnostics = role_context.get("diagnostics") or {}
     if not diagnostics:
@@ -578,13 +628,30 @@ def _append_diagnostics_to_task(task_text: str, role_context: Dict[str, Any]) ->
 
     error_message = diagnostics.get("error_message") or ""
     test_error = diagnostics.get("test_error") or ""
+    original_test_error = diagnostics.get("original_test_error") or ""
+    latest_test_error = diagnostics.get("latest_test_error") or ""
+    postprocess_error = diagnostics.get("postprocess_error") or ""
+    failure_summary = diagnostics.get("failure_summary") or ""
     failed_code = diagnostics.get("failed_code") or ""
 
     lines = ["Diagnostics:"]
+    if failure_summary:
+        lines.append(f"Failure summary: {_truncate_text(str(failure_summary), max_chars=800)}")
     if error_message:
         lines.append(f"Error: {_truncate_text(error_message, max_chars=500)}")
     if test_error and test_error != error_message:
         lines.append(f"Test error: {_truncate_text(test_error, max_chars=500)}")
+    if original_test_error and original_test_error not in {test_error, error_message}:
+        lines.append(f"Original test error: {_truncate_text(original_test_error, max_chars=500)}")
+    if latest_test_error and latest_test_error not in {test_error, error_message, original_test_error}:
+        lines.append(f"Latest test error: {_truncate_text(latest_test_error, max_chars=500)}")
+    if postprocess_error and postprocess_error not in {test_error, error_message, latest_test_error}:
+        lines.append(f"Postprocess error: {_truncate_text(postprocess_error, max_chars=500)}")
+    assertion_hints = _extract_assertion_hints(original_test_error or test_error)
+    if assertion_hints:
+        lines.append("Assertion hints:")
+        for hint in assertion_hints:
+            lines.append(f"- {_truncate_text(hint, max_chars=500)}")
     if failed_code:
         lines.append("Failed code:")
         lines.append(_truncate_text(str(failed_code), max_chars=1200))
@@ -681,6 +748,45 @@ def _normalize_role_name(role: Optional[str]) -> str:
     if not key:
         return ""
     return _ROLE_ALIAS.get(key, key)
+
+
+def _to_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        return normalized in {"1", "true", "yes", "y", "ready", "done"}
+    return False
+
+
+def _planner_ready_to_handoff(output: Any) -> bool:
+    if not isinstance(output, dict):
+        return False
+    if "ready_to_handoff" in output:
+        return _to_bool(output.get("ready_to_handoff"))
+    if str(output.get("next_role") or "").strip():
+        return True
+    status = str(output.get("status") or "").strip().lower()
+    if status in {"delegate", "handoff", "ready_to_handoff", "plan_ready"}:
+        return True
+    steps = output.get("steps")
+    if isinstance(steps, list) and len(steps) > 0:
+        return True
+    return False
+
+
+def _planner_next_role(output: Any) -> Optional[str]:
+    if not isinstance(output, dict):
+        return None
+    candidate = str(output.get("next_role") or "").strip()
+    if not candidate:
+        return None
+    normalized = _normalize_role_name(candidate)
+    if normalized in {"finish", "none", "null"}:
+        return None
+    return normalized
 
 
 def _role_pair_weight(prev_role: Optional[str], curr_role: Optional[str]) -> float:
@@ -1416,6 +1522,9 @@ def _plan_and_run_tools(
     failed_code = None  # Track the last failed code for refinement
     last_error = None  # Track the last error message
     last_test_error = None  # Track the last test failure message
+    original_test_error = None  # First test failure in current refinement chain
+    latest_test_error = None  # Most recent test/postprocess failure
+    postprocess_error = None  # Most recent postprocess-specific failure
     consecutive_same_category_failures = 0  # Track consecutive failures in same category
     consecutive_failures = 0  # Track consecutive failures across tools
     
@@ -1522,13 +1631,26 @@ def _plan_and_run_tools(
             
             if last_test_error:
                 exec_inputs["test_error"] = last_test_error
+                if original_test_error:
+                    exec_inputs["original_test_error"] = original_test_error
+                if latest_test_error:
+                    exec_inputs["latest_test_error"] = latest_test_error
+                if postprocess_error:
+                    exec_inputs["postprocess_error"] = postprocess_error
+                failure_summary = _summarize_failure(
+                    last_error,
+                    original_test_error or last_test_error,
+                )
+                if failure_summary:
+                    exec_inputs["failure_summary"] = failure_summary
                 
                 # Analyze specific error patterns and provide targeted hints
-                error_lower = last_test_error.lower()
+                focus_error_text = original_test_error or last_test_error
+                error_lower = focus_error_text.lower()
                 
                 # Type checking issues - be very aggressive about isinstance(x, int) bug
                 if failed_code and "isinstance" in failed_code and "int" in failed_code:
-                    if "5.0" in last_test_error or "float" in error_lower or "assertionerror" in error_lower:
+                    if "5.0" in focus_error_text or "float" in error_lower or "assertionerror" in error_lower:
                         diagnostic_hints.append(
                             "❌ TYPE CHECK ERROR: Using isinstance(x, int) filters out floats like 5.0 that are mathematically integers.\n"
                             "✅ CRITICAL FIX: Replace isinstance(x, int) with: isinstance(x, (int, float)) and x == int(x)\n"
@@ -1538,7 +1660,7 @@ def _plan_and_run_tools(
                 # Assertion errors with specific values
                 if "assertionerror" in error_lower:
                     # Extract expected vs actual if present
-                    if "==" in last_test_error:
+                    if "==" in focus_error_text:
                         diagnostic_hints.append(
                             f"❌ ASSERTION FAILED: The test expectation was not met.\n"
                             f"✅ HINT: Check the logic carefully - the output doesn't match expected result."
@@ -1568,8 +1690,10 @@ def _plan_and_run_tools(
                 # Build refinement request with diagnostics
                 refinement_parts = [
                     "🔍 PREVIOUS ATTEMPT FAILED - DETAILED ANALYSIS:",
-                    f"\n📋 Test Error: {last_test_error[:300]}",
+                    f"\n📋 Primary Test Error: {focus_error_text[:300]}",
                 ]
+                if postprocess_error and postprocess_error != focus_error_text:
+                    refinement_parts.append(f"\n📋 Latest Postprocess Error: {postprocess_error[:300]}")
                 
                 if diagnostic_hints:
                     refinement_parts.append("\n💡 SPECIFIC ISSUES IDENTIFIED:")
@@ -1743,7 +1867,7 @@ def _plan_and_run_tools(
                             last_code_length = code_length
                         
                         # Check if code is actually an error message
-                        if code.strip().startswith("# Error:") or "timed out" in code.lower():
+                        if _is_likely_error_text(code):
                             has_errors = True
                             failed_code = None
                             last_error = code.strip()
@@ -1764,6 +1888,9 @@ def _plan_and_run_tools(
                                     failed_code = None
                                     last_error = None
                                     last_test_error = None
+                                    original_test_error = None
+                                    latest_test_error = None
+                                    postprocess_error = None
                                     role_context["test_passed"] = True
                                     role_context.pop("diagnostics", None)
                                     
@@ -1787,10 +1914,18 @@ def _plan_and_run_tools(
                                     failed_code = code
                                     last_error = f"Test failed: {test_error}"
                                     last_test_error = test_error
+                                    latest_test_error = test_error
+                                    postprocess_error = None
+                                    if original_test_error is None:
+                                        original_test_error = test_error
+                                    failure_summary = _summarize_failure(last_error, test_error)
                                     role_context["diagnostics"] = {
                                         "test_error": test_error,
                                         "error_message": last_error,
                                         "failed_code": code,
+                                        "original_test_error": original_test_error,
+                                        "latest_test_error": latest_test_error,
+                                        "failure_summary": failure_summary,
                                     }
                                     # Track failure count for this tool and category
                                     tool_failure_counts[tool_id] = tool_failure_counts.get(tool_id, 0) + 1
@@ -1815,6 +1950,9 @@ def _plan_and_run_tools(
                                         failed_code = None
                                         last_error = None
                                         last_test_error = None
+                                        original_test_error = None
+                                        latest_test_error = None
+                                        postprocess_error = None
                                         role_context["test_passed"] = True
                                         role_context.pop("diagnostics", None)
                                         
@@ -1837,11 +1975,17 @@ def _plan_and_run_tools(
                                     else:
                                         failed_code = post_code or failed_code
                                         last_error = f"Postprocess failed: {post_error}"
-                                        last_test_error = post_error
+                                        latest_test_error = post_error
+                                        postprocess_error = post_error
+                                        failure_summary = _summarize_failure(last_error, original_test_error or last_test_error)
                                         role_context["diagnostics"] = {
-                                            "test_error": post_error,
+                                            "test_error": original_test_error or last_test_error or post_error,
                                             "error_message": last_error,
                                             "failed_code": failed_code,
+                                            "original_test_error": original_test_error,
+                                            "latest_test_error": latest_test_error,
+                                            "postprocess_error": postprocess_error,
+                                            "failure_summary": failure_summary,
                                         }
                             else:
                                 # No test available, accept code based on success flag
@@ -1852,6 +1996,9 @@ def _plan_and_run_tools(
                                 has_errors = False
                                 failed_code = None
                                 last_error = None
+                                original_test_error = None
+                                latest_test_error = None
+                                postprocess_error = None
                                 consecutive_same_category_failures = 0  # Reset on success
                         else:
                             # Placeholder code counts as "no useful result"
@@ -1870,10 +2017,18 @@ def _plan_and_run_tools(
             consecutive_failures = 0
 
         if has_errors and (last_error or failed_code or last_test_error):
+            failure_summary = _summarize_failure(
+                last_error,
+                original_test_error or last_test_error,
+            )
             diagnostics_payload = {
                 "error_message": last_error,
-                "test_error": last_test_error,
+                "test_error": original_test_error or last_test_error,
                 "failed_code": failed_code,
+                "original_test_error": original_test_error,
+                "latest_test_error": latest_test_error,
+                "postprocess_error": postprocess_error,
+                "failure_summary": failure_summary,
             }
             role_context["diagnostics"] = {k: v for k, v in diagnostics_payload.items() if v}
 
@@ -2814,6 +2969,14 @@ def _plan_topology(
             # Ensure max_steps is a valid integer (not None or missing)
             if "max_steps" not in data or data["max_steps"] is None:
                 data["max_steps"] = max_steps
+            else:
+                try:
+                    llm_steps = int(data["max_steps"])
+                except Exception:
+                    llm_steps = max_steps
+                # Never allow meta-router to exceed CLI max_steps budget.
+                llm_steps = max(1, min(llm_steps, int(max_steps)))
+                data["max_steps"] = llm_steps
             
             # UPDATED: Trust LoRA's role selection, but validate roles are in available list
             # If LoRA returns roles, validate them against available roles list
@@ -2862,9 +3025,16 @@ def _select_next_role(
         return None
     if llm:
         recent = history[-3:] if history else []
-        recent_summary = [
-            {"role": item.get("role"), "summary": item.get("summary")} for item in recent if item.get("summary")
-        ]
+        recent_summary = []
+        for item in recent:
+            if not item.get("summary"):
+                continue
+            row: Dict[str, Any] = {"role": item.get("role"), "summary": item.get("summary")}
+            if "planner_ready_to_handoff" in item:
+                row["planner_ready_to_handoff"] = bool(item.get("planner_ready_to_handoff"))
+            if item.get("planner_next_role"):
+                row["planner_next_role"] = item.get("planner_next_role")
+            recent_summary.append(row)
         # Check if task is already completed (test passed in recent history)
         task_completed = any(
             item.get("test_passed") or item.get("status") == "success" 
@@ -3009,6 +3179,7 @@ def _run_dynamic_workflow(
     next_role_llm_client: Optional[LLMClient],
     route_query_llm_client: Optional[LLMClient],
     max_steps: int,
+    force_final_builder_extra_step: bool,
     allow_unknown_roles: bool,
     reuse_role_selection: bool,
     reuse_same_role_agent_once: bool,
@@ -3048,6 +3219,8 @@ def _run_dynamic_workflow(
     history: List[Dict[str, Any]] = []
     selected_agent_ids: List[str] = []
     selected_agent_roles: List[str] = []
+    workflow_succeeded = False
+    forced_final_builder_executed = False
 
     tool_executor = (
         ToolExecutor(
@@ -3218,7 +3391,12 @@ def _run_dynamic_workflow(
                 history_entry["test_passed"] = output["test_passed"]
             elif "status" in output and output["status"] == "success":
                 history_entry["status"] = "success"
-        
+            if _normalize_role_name(role) == "planner":
+                history_entry["planner_ready_to_handoff"] = _planner_ready_to_handoff(output)
+                planner_hint = _planner_next_role(output)
+                if planner_hint:
+                    history_entry["planner_next_role"] = planner_hint
+
         history.append(history_entry)
         
         return output
@@ -3228,12 +3406,18 @@ def _run_dynamic_workflow(
         raise ValueError("No roles available for dynamic workflow")
 
     if config.topology == TopologyType.SINGLE:
-        _execute_role(config.entry_role or roles_available[0], task_text, 0, "single")
+        single_output = _execute_role(config.entry_role or roles_available[0], task_text, 0, "single")
+        if isinstance(single_output, dict) and (
+            single_output.get("test_passed") or single_output.get("status") == "success"
+        ):
+            workflow_succeeded = True
     elif config.topology == TopologyType.CENTRALIZED:
         manager = config.manager_role or (roles_available[0] if roles_available else "planner")
         # Manager/planner should use LLM for planning, not tools for code generation
         # Disable tool_only for manager execution so it can generate planning steps
         manager_output = _execute_role(manager, task_text, 0, "manager", override_tool_only=False)
+        manager_is_planner = _normalize_role_name(manager) == "planner"
+        planner_ready = _planner_ready_to_handoff(manager_output) if manager_is_planner else True
         
         # Extract steps from manager output (for logging/planning purposes)
         steps = []
@@ -3247,21 +3431,46 @@ def _run_dynamic_workflow(
         worker_roles = [role for role in roles_available if role != manager] or roles_available
         last_worker = None
         for worker_idx in range(config.max_steps):
+            candidate_roles = list(worker_roles)
+            avoid_role = last_worker
+            if manager_is_planner and not planner_ready and not force_role:
+                # Planner has not handed off yet: include manager as a routable option.
+                # The concrete next role is still chosen by the centralized routing LLM.
+                candidate_roles = [manager] + [role for role in worker_roles if role != manager]
+                avoid_role = None
+                print("[DEBUG] Centralized planner_ready=false, allowing manager replanning in role routing", file=sys.stderr)
             next_role = _select_next_role(
                 task_text=task_text,
-                available_roles=worker_roles,
+                available_roles=candidate_roles,
                 history=history,
                 llm=next_role_llm_client,
                 force_role=force_role,
-                avoid_role=last_worker,  # Try to avoid repeating the same worker
+                avoid_role=avoid_role,  # Try to avoid repeating the same worker unless planner isn't ready
             )
             if not next_role:
                 print(f"[DEBUG] No more workers to try, stopping CENTRALIZED workflow", file=sys.stderr)
                 break
+            if next_role == manager:
+                manager_output = _execute_role(
+                    manager,
+                    task_text,
+                    worker_idx + 1,
+                    "centralized_manager_replan",
+                    override_tool_only=False,
+                )
+                if isinstance(manager_output, dict) and (
+                    manager_output.get("test_passed") or manager_output.get("status") == "success"
+                ):
+                    print("[DEBUG] Manager reported success, stopping CENTRALIZED workflow", file=sys.stderr)
+                    workflow_succeeded = True
+                    break
+                planner_ready = _planner_ready_to_handoff(manager_output) if manager_is_planner else True
+                continue
             worker_output = _execute_role(next_role, task_text, worker_idx + 1, "centralized")
             last_worker = next_role
             if isinstance(worker_output, dict) and (worker_output.get("test_passed") or worker_output.get("status") == "success"):
                 print("[DEBUG] Test passed, stopping CENTRALIZED workflow", file=sys.stderr)
+                workflow_succeeded = True
                 break
     else:
         current_role = config.entry_role or roles_available[0]
@@ -3275,11 +3484,49 @@ def _run_dynamic_workflow(
             last_output = _execute_role(current_role, task_for_role, step_idx, "dynamic_soft" if soft_connection else "dynamic")
             if isinstance(last_output, dict) and (last_output.get("test_passed") or last_output.get("status") == "success"):
                 print("[DEBUG] Test passed, stopping dynamic workflow", file=sys.stderr)
+                workflow_succeeded = True
                 break
             visited[current_role] = visited.get(current_role, 0) + 1
             neighbors = _neighbors_for_role(current_role, config)
             candidates = neighbors if neighbors else roles_available
             avoid_role = current_role if visited.get(current_role, 0) > 1 else None
+
+            # Planner controls handoff timing in non-centralized flows.
+            # If the planner says it's not ready, keep planner for next step.
+            current_role_key = _normalize_role_name(current_role)
+            if current_role_key == "planner" and not force_role:
+                planner_ready = _planner_ready_to_handoff(last_output)
+                if not planner_ready:
+                    print("[DEBUG] Planner not ready_to_handoff, continuing planner", file=sys.stderr)
+                    continue
+
+                planner_suggested = _planner_next_role(last_output)
+                resolved_planner_suggested = None
+                if planner_suggested:
+                    resolved_planner_suggested = next(
+                        (candidate for candidate in candidates if _normalize_role_name(candidate) == planner_suggested),
+                        None,
+                    )
+                if resolved_planner_suggested:
+                    print(
+                        f"[DEBUG] Planner ready_to_handoff, suggested next_role={resolved_planner_suggested}",
+                        file=sys.stderr,
+                    )
+                    next_role = resolved_planner_suggested
+                    current_role = next_role
+                    continue
+
+                builder_fallback = next(
+                    (candidate for candidate in candidates if _normalize_role_name(candidate) == "builder"),
+                    None,
+                )
+                if builder_fallback:
+                    print(
+                        "[DEBUG] Planner ready_to_handoff, no valid suggestion; fallback next_role=builder",
+                        file=sys.stderr,
+                    )
+                    current_role = builder_fallback
+                    continue
             
             # Check if agent specified next_role in output (agent-driven routing for decentralized)
             agent_suggested_role = None
@@ -3321,6 +3568,31 @@ def _run_dynamic_workflow(
                 break
             current_role = next_role
 
+    last_history = history[-1] if history else {}
+    last_role = _normalize_role_name(last_history.get("role"))
+    last_step_failed = not (
+        bool(last_history.get("test_passed")) or str(last_history.get("status") or "") == "success"
+    )
+    should_force_final_builder = (
+        force_final_builder_extra_step
+        and not workflow_succeeded
+        and last_role == "checker"
+        and last_step_failed
+    )
+    if should_force_final_builder:
+        builder_role = next(
+            (role for role in roles_available if _normalize_role_name(role) == "builder"),
+            None,
+        )
+        if builder_role:
+            _execute_role(
+                builder_role,
+                task_text,
+                config.max_steps + 1,
+                "forced_final_builder_extra",
+            )
+            forced_final_builder_executed = True
+
     checker_ok = _checker_ok(results)
     return {
         "results": results,
@@ -3329,6 +3601,7 @@ def _run_dynamic_workflow(
         "selections": selection_log,
         "checker_ok": checker_ok,
         "topology": config.model_dump(),
+        "forced_final_builder_executed": forced_final_builder_executed,
     }
 
 
@@ -3366,6 +3639,7 @@ def run_workflow(
     meta_router_llm_client: Optional[LLMClient] = None,
     next_role_llm_client: Optional[LLMClient] = None,
     max_steps: int = 6,
+    force_final_builder_extra_step: bool = True,
     allow_unknown_roles: bool = False,
     reuse_role_selection: bool = True,
     reuse_same_role_agent_once: bool = False,
@@ -3452,6 +3726,7 @@ def run_workflow(
             next_role_llm_client=next_role_llm_client or router_llm_client,
             route_query_llm_client=next_role_llm_client or router_llm_client,
             max_steps=max_steps,
+            force_final_builder_extra_step=force_final_builder_extra_step,
             allow_unknown_roles=allow_unknown_roles or dynamic_mode,
             force_role=force_role,
             reuse_role_selection=reuse_role_selection,
@@ -3515,6 +3790,7 @@ def run_workflow(
             "results": results,
             "tool_exec": dynamic_result.get("tool_exec"),
             "topology": dynamic_result.get("topology"),
+            "forced_final_builder_executed": bool(dynamic_result.get("forced_final_builder_executed")),
         }
 
     selected_agent_ids: List[str] = []

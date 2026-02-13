@@ -4,7 +4,7 @@ import builtins
 import multiprocessing as mp
 import os
 import queue
-from typing import Dict
+from typing import Dict, Optional
 
 
 _ALLOWED_MODULES = {
@@ -145,8 +145,14 @@ def _execute_tool_code(code: str, inputs: dict) -> Dict:
     return output
 
 
-def _sandbox_worker(code: str, inputs: dict, result_queue: mp.Queue) -> None:
+def _sandbox_worker(
+    code: str,
+    inputs: dict,
+    result_queue: mp.Queue,
+    http_timeout_s: Optional[float],
+) -> None:
     try:
+        _patch_httpx_timeout(http_timeout_s)
         output = _execute_tool_code(code, inputs)
         result_queue.put({"ok": True, "output": output, "error": None})
     except Exception as exc:
@@ -159,9 +165,86 @@ def _sandbox_worker(code: str, inputs: dict, result_queue: mp.Queue) -> None:
         )
 
 
+def _read_tool_http_timeout() -> Optional[float]:
+    raw = str(os.getenv("TOOL_HTTP_TIMEOUT_S") or "").strip()
+    if not raw:
+        return None
+    try:
+        value = float(raw)
+    except Exception:
+        return None
+    if value <= 0:
+        return None
+    return value
+
+
+def _resolve_tool_http_timeout(execution_timeout_s: float) -> Optional[float]:
+    env_timeout = _read_tool_http_timeout()
+    if env_timeout is not None:
+        return env_timeout
+    try:
+        value = float(execution_timeout_s)
+    except Exception:
+        return None
+    if value <= 0:
+        return None
+    return value
+
+
+def _patch_httpx_timeout(timeout_s: Optional[float]) -> None:
+    if timeout_s is None:
+        return
+    try:
+        import httpx  # type: ignore
+    except Exception:
+        return
+
+    if getattr(httpx, "_TOOL_HTTP_TIMEOUT_PATCHED", False):
+        return
+
+    original_post = getattr(httpx, "post", None)
+    if callable(original_post):
+        def _patched_post(*args, **kwargs):
+            kwargs["timeout"] = timeout_s
+            return original_post(*args, **kwargs)
+
+        httpx.post = _patched_post  # type: ignore[attr-defined]
+
+    original_request = getattr(httpx, "request", None)
+    if callable(original_request):
+        def _patched_request(*args, **kwargs):
+            kwargs["timeout"] = timeout_s
+            return original_request(*args, **kwargs)
+
+        httpx.request = _patched_request  # type: ignore[attr-defined]
+
+    original_client = getattr(httpx, "Client", None)
+    if isinstance(original_client, type):
+        class _PatchedClient(original_client):  # type: ignore[misc, valid-type]
+            def __init__(self, *args, **kwargs):
+                kwargs["timeout"] = timeout_s
+                super().__init__(*args, **kwargs)
+
+        _PatchedClient.__name__ = original_client.__name__
+        httpx.Client = _PatchedClient  # type: ignore[attr-defined]
+
+    original_async_client = getattr(httpx, "AsyncClient", None)
+    if isinstance(original_async_client, type):
+        class _PatchedAsyncClient(original_async_client):  # type: ignore[misc, valid-type]
+            def __init__(self, *args, **kwargs):
+                kwargs["timeout"] = timeout_s
+                super().__init__(*args, **kwargs)
+
+        _PatchedAsyncClient.__name__ = original_async_client.__name__
+        httpx.AsyncClient = _PatchedAsyncClient  # type: ignore[attr-defined]
+
+    setattr(httpx, "_TOOL_HTTP_TIMEOUT_PATCHED", True)
+
+
 def execute_tool_code(code: str, inputs: dict, timeout_s: float = 1.0) -> Dict:
     result_queue: mp.Queue = mp.Queue()
-    process = mp.Process(target=_sandbox_worker, args=(code, inputs, result_queue))
+    http_timeout_s = _resolve_tool_http_timeout(timeout_s)
+    process = mp.Process(target=_sandbox_worker, args=(code, inputs, result_queue, http_timeout_s))
     process.start()
     process.join(timeout_s)
 

@@ -174,6 +174,7 @@ def _auto_generate_solutions_orchestrator(
     topology_config: Optional[Dict[str, Any]],
     soft_connection: bool,
     max_steps: int,
+    force_final_builder_extra_step: bool,
     allow_unknown_roles: bool,
     reuse_role_selection: bool,
     reuse_same_role_agent_once: bool,
@@ -417,6 +418,7 @@ def _auto_generate_solutions_orchestrator(
                 next_role_llm_client=effective_next_role_llm_client,
                 soft_connection=soft_connection,
                 max_steps=effective_max_steps,
+                force_final_builder_extra_step=force_final_builder_extra_step,
                 allow_unknown_roles=allow_unknown_roles,
                 reuse_role_selection=reuse_role_selection,
                 reuse_same_role_agent_once=effective_reuse_same_role_agent_once,
@@ -710,6 +712,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--topology_config", default="", type=str)
     parser.add_argument("--soft_connection", action="store_true")
     parser.add_argument("--max_steps", default=6, type=int)
+    parser.add_argument(
+        "--force_final_builder_extra_step",
+        dest="force_final_builder_extra_step",
+        action="store_true",
+        help="force one extra builder step after dynamic workflow if not solved (default: enabled)",
+    )
+    parser.add_argument(
+        "--no_force_final_builder_extra_step",
+        dest="force_final_builder_extra_step",
+        action="store_false",
+        help="disable extra final builder step",
+    )
+    parser.set_defaults(force_final_builder_extra_step=True)
     parser.add_argument("--max_attempts", default=3, type=int, help="max retries per role/tool execution")
     parser.add_argument("--allow_unknown_roles", action="store_true")
     parser.add_argument("--no_reuse_role_selection", action="store_true")
@@ -788,6 +803,7 @@ def main() -> None:
                     topology_config=topology_config,
                     soft_connection=args.soft_connection,
                     max_steps=args.max_steps,
+                    force_final_builder_extra_step=args.force_final_builder_extra_step,
                     max_attempts=args.max_attempts,
                     allow_unknown_roles=args.allow_unknown_roles,
                     reuse_role_selection=not args.no_reuse_role_selection,

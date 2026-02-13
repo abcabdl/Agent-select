@@ -27,6 +27,7 @@ _POSTPROCESS_TOOL_IDS = [
 _POSTPROCESS_REGISTRY = None
 _POSTPROCESS_EXECUTOR = None
 _POSTPROCESS_DB_PATH: Optional[str] = None
+_POSTPROCESS_TIMEOUT_S: Optional[float] = None
 
 def _apply_stop_tokens(text: str, stop_tokens: List[str]) -> str:
     if not text or not stop_tokens:
@@ -99,12 +100,28 @@ def _strip_redundant_def(text: str, entry_point: Optional[str]) -> str:
         return text
     target_pattern = re.compile(rf"^\s*def\s+{re.escape(entry_point)}\s*\(")
     lines = text.splitlines()
+
+    def _is_safe_prefix_line(raw_line: str) -> bool:
+        stripped = raw_line.strip()
+        if not stripped:
+            return False
+        if stripped.startswith("import ") or stripped.startswith("from "):
+            return True
+        # Keep simple top-level constants used by function body.
+        return bool(re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", stripped))
+
     for idx, line in enumerate(lines):
         if target_pattern.match(line):
             body_lines = lines[idx + 1 :]
             if not body_lines:
                 return text
-            return "\n".join(body_lines).lstrip("\n")
+            prefix_lines = [ln.lstrip() for ln in lines[:idx] if _is_safe_prefix_line(ln)]
+            merged_lines: List[str] = []
+            if prefix_lines:
+                merged_lines.extend(prefix_lines)
+                merged_lines.append("")
+            merged_lines.extend(body_lines)
+            return "\n".join(merged_lines).lstrip("\n")
     return text
 
 
@@ -149,7 +166,9 @@ def _normalize_body_indentation(lines: List[str]) -> List[str]:
 def _normalize_completion(text: str, entry_point: Optional[str]) -> str:
     if text is None:
         return ""
-    text = str(text).replace("\\n", "\n")
+    # Keep escaped sequences inside string literals intact (e.g., r'[\\n*]').
+    # JSON-wrapped code should already be decoded by _unwrap_json_code.
+    text = str(text)
     if not entry_point:
         return text
     lines = text.lstrip("\n").splitlines()
@@ -187,6 +206,11 @@ def _normalize_completion(text: str, entry_point: Optional[str]) -> str:
     lines = _normalize_body_indentation(lines)
     lines = [("    " + line) if line.strip() else line for line in lines]
     return "\n".join(lines)
+
+
+def _fix_missing_indents(text: str, entry_point: Optional[str] = None) -> str:
+    """Compatibility helper for callers expecting indentation repair API."""
+    return _normalize_completion(str(text or ""), entry_point)
 
 
 def _extract_function_signature(prompt: str, entry_point: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -233,14 +257,29 @@ def _resolve_postprocess_db_path(db_path: Optional[str]) -> str:
     return str(candidate)
 
 
+def _resolve_postprocess_tool_timeout_s() -> float:
+    raw = str(os.getenv("POSTPROCESS_TOOL_TIMEOUT_S") or "").strip()
+    if not raw:
+        return 8.0
+    try:
+        value = float(raw)
+    except Exception:
+        return 8.0
+    if value <= 0:
+        return 8.0
+    return value
+
+
 def _get_postprocess_executor(db_path: Optional[str] = None):
-    global _POSTPROCESS_REGISTRY, _POSTPROCESS_EXECUTOR, _POSTPROCESS_DB_PATH
+    global _POSTPROCESS_REGISTRY, _POSTPROCESS_EXECUTOR, _POSTPROCESS_DB_PATH, _POSTPROCESS_TIMEOUT_S
 
     resolved = _resolve_postprocess_db_path(db_path)
+    timeout_s = _resolve_postprocess_tool_timeout_s()
     if (
         _POSTPROCESS_EXECUTOR is not None
         and _POSTPROCESS_REGISTRY is not None
         and _POSTPROCESS_DB_PATH == resolved
+        and _POSTPROCESS_TIMEOUT_S == timeout_s
     ):
         return _POSTPROCESS_EXECUTOR
 
@@ -254,8 +293,9 @@ def _get_postprocess_executor(db_path: Optional[str] = None):
             pass
 
     _POSTPROCESS_REGISTRY = SQLiteRegistry(resolved)
-    _POSTPROCESS_EXECUTOR = ToolExecutor(_POSTPROCESS_REGISTRY, timeout_s=2.0)
+    _POSTPROCESS_EXECUTOR = ToolExecutor(_POSTPROCESS_REGISTRY, timeout_s=timeout_s)
     _POSTPROCESS_DB_PATH = resolved
+    _POSTPROCESS_TIMEOUT_S = timeout_s
     return _POSTPROCESS_EXECUTOR
 
 
@@ -325,6 +365,7 @@ def _run_postprocess_tool_agent(
         "agent": _POSTPROCESS_AGENT_NAME,
         "agent_id": _POSTPROCESS_AGENT_ID,
         "applied_tools": [],
+        "attempted_tools": [],
         "fallback_detected": False,
         "tool_errors": {},
     }
@@ -350,6 +391,7 @@ def _run_postprocess_tool_agent(
     }
 
     for tool_id in _POSTPROCESS_TOOL_IDS:
+        meta["attempted_tools"].append(tool_id)
         tool_inputs = dict(base_inputs)
         tool_inputs["completion"] = current
         try:
@@ -674,6 +716,7 @@ def _repair_assertion_completion_with_llm(
     test_code: str,
     entry_point: Optional[str],
     error_message: str,
+    failure_context: str = "",
     max_tokens: int = 700,
 ) -> Optional[str]:
     if llm_client is None:
@@ -691,8 +734,13 @@ def _repair_assertion_completion_with_llm(
                 "Return ONLY raw function body code (no markdown, no explanation, no function signature).\n"
                 "Keep correct Python indentation for function body lines.\n"
                 "Do not output import/main/test code.\n\n"
+                "Pass ALL provided assertions exactly.\n"
+                "Match output container types exactly (list vs tuple) and preserve order exactly.\n"
+                "Avoid unrelated defensive branches unless tests/prompt require them.\n"
+                "Ensure termination and avoid loops that can hang.\n\n"
                 f"Current implementation body:\n{completion or ''}\n\n"
                 f"Failing assertion/error hint:\n{assertion_hint}\n\n"
+                f"Detailed failure context:\n{failure_context or ''}\n\n"
                 f"Reference tests (truncated):\n{tests_preview}\n"
             ),
         }
@@ -747,8 +795,11 @@ def _evaluate_with_postprocess_check(
         attempt: Dict[str, Any] = {
             "round": round_idx + 1,
             "tools": post_meta.get("applied_tools", []),
+            "attempted_tools": post_meta.get("attempted_tools", []),
             "original_error": message,
         }
+        if isinstance(post_meta.get("tool_errors"), dict) and post_meta.get("tool_errors"):
+            attempt["tool_errors"] = post_meta.get("tool_errors")
         if not repaired_text or repaired_text == current:
             attempt["no_change"] = True
             attempts.append(attempt)
