@@ -34,7 +34,7 @@ class MockLLMClient:
         agent_name = agent.get("name") or agent.get("id") or "agent"
         agent_domain = ",".join(agent.get("domain_tags") or [])
         agent_tools = ",".join(agent.get("tool_tags") or [])
-        role_key = role.strip().lower()
+        role_key = _normalize_role_name(role)
         if role_key == "planner":
             return {
                 "steps": [
@@ -58,6 +58,12 @@ class MockLLMClient:
                 "runnable_plan": ["Implement core logic", "Wire dependencies", "Run tests"],
                 "code_or_commands": f"run build; use {agent_tools or 'default tools'}",
                 "self_test": ["unit tests pass", "smoke test pass"],
+            }
+        if role_key == "refactor":
+            return {
+                "runnable_plan": ["Refactor implementation", "Preserve behavior", "Re-run regression tests"],
+                "code_or_commands": f"run refactor; use {agent_tools or 'default tools'}",
+                "self_test": ["regression tests pass", "smoke test pass"],
             }
         if role_key == "checker":
             return {
@@ -173,6 +179,10 @@ class RealLLMClient:
             "fields": {"runnable_plan": "list[str]", "code_or_commands": "str", "self_test": "list[str]"},
             "guidance": "Outline implementation steps and provide runnable code/commands.",
         },
+        "refactor": {
+            "fields": {"runnable_plan": "list[str]", "code_or_commands": "str", "self_test": "list[str]"},
+            "guidance": "Refactor code with minimal behavior-preserving edits and include updated code.",
+        },
         "checker": {
             "fields": {"test_cases": "list[str]", "verdicts": "list[str]", "failure_localization": "str"},
             "guidance": "Define tests, verdicts, and failure localization notes.",
@@ -193,7 +203,7 @@ class RealLLMClient:
         self.llm = llm
 
     def _build_messages(self, role: str, task_text: str, context: Dict[str, Any], fix: bool) -> List[Dict[str, str]]:
-        role_key = role.strip().lower()
+        role_key = _normalize_role_name(role)
         schema = self._ROLE_SCHEMAS.get(role_key) or {
             "fields": {"summary": "str", "key_points": "list[str]", "next_hint": "str"},
             "guidance": "Summarize the work and suggest the next action.",
@@ -737,6 +747,9 @@ _ROLE_PAIR_WEIGHTS = {
     ("researcher", "planner"): 1.15,
     ("researcher", "builder"): 1.10,
     ("planner", "builder"): 1.25,
+    ("builder", "refactor"): 1.20,
+    ("refactor", "checker"): 1.20,
+    ("checker", "refactor"): 1.10,
     ("planner", "checker"): 1.05,
     ("builder", "checker"): 1.35,
     ("checker", "builder"): 1.10,
@@ -2432,8 +2445,10 @@ def _tool_history_to_output(role: str, tool_history: List[Dict[str, Any]]) -> Di
     else:
         payload_text = json.dumps(payload, ensure_ascii=True, default=str)
     summary = _summarize_tool_history(tool_history)
-    role_key = role.strip().lower()
+    role_key = _normalize_role_name(role)
     if role_key == "builder":
+        return {"runnable_plan": summary, "code_or_commands": payload_text, "self_test": []}
+    if role_key == "refactor":
         return {"runnable_plan": summary, "code_or_commands": payload_text, "self_test": []}
     if role_key == "planner":
         return {"steps": summary, "acceptance_criteria": [], "code_or_commands": payload_text}
@@ -2936,7 +2951,7 @@ def _plan_topology(
             f"Task: {task_text}\n"
             f"Available roles: {json.dumps(roles, ensure_ascii=True)}\n"
             "Topology options: single, centralized, decentralized, chain.\n"
-            "IMPORTANT: For code generation tasks, prefer 'centralized' topology to leverage multiple specialized roles (planner, builder, tester, refactorer) for better code quality.\n"
+            "IMPORTANT: For code generation tasks, prefer 'centralized' topology to leverage multiple specialized roles (planner, builder, checker, refactor) for better code quality.\n"
             "Use 'single' only for extremely simple tasks that clearly need just one role.\n"
         )
         response = meta_router_llm_client.chat(
@@ -3080,6 +3095,7 @@ def _select_next_role(
         ("researcher", ["research", "search", "find", "查", "搜索", "调研", "资料"]),
         ("planner", ["plan", "planning", "拆解", "规划", "路线"]),
         ("builder", ["build", "implement", "code", "开发", "实现", "写代码", "生成"]),
+        ("refactor", ["refactor", "refractor", "polish", "cleanup", "重构", "优化代码"]),
         ("checker", ["test", "verify", "check", "验证", "检查", "评估"]),
     ]
     for role_name, keywords in role_priority:
@@ -3661,7 +3677,7 @@ def run_workflow(
     if registry is None or index is None or embedder is None:
         raise ValueError("registry, index, embedder are required")
 
-    role_list = roles or ["planner", "researcher", "builder", "checker"]
+    role_list = roles or ["planner", "builder", "checker", "refactor"]
     constraints_per_role = constraints_per_role or {}
     task_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
     llm = RealLLMClient(llm_client) if llm_client else MockLLMClient()
@@ -3796,6 +3812,7 @@ def run_workflow(
     selected_agent_ids: List[str] = []
     selection_cache: Dict[str, Dict[str, Any]] = {}
     for role in role_list:
+        role_key = _normalize_role_name(role)
         constraints = _ensure_role_constraints(constraints_per_role.get(role), role)
         selection = _select_agent_for_role(
             task_text=task_text,

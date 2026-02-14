@@ -5,7 +5,7 @@ import sys
 import ast
 import re
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 # Ensure we can import from src
 SRC_DIR = Path(__file__).resolve().parents[1]
@@ -50,7 +50,7 @@ def _extract_entry_point_from_tests(test_list: List[Any]) -> str:
     return ""
 
 
-def get_system_prompt(strategy: str = "single_preference") -> str:
+def get_system_prompt(strategy: str = "single_preference", available_roles: Optional[List[str]] = None) -> str:
     """
     Generate system prompt based on agent topology strategy.
     
@@ -62,11 +62,49 @@ def get_system_prompt(strategy: str = "single_preference") -> str:
             - "multi_aggressive": Strongly encourages multi-agent collaboration
     """
     
-    base_prompt = """You are a meta-router for code development. Decide the best topology.
-Return JSON: {"topology": "...", "roles": [...], "manager_role": "...", "entry_role": "...", "max_steps": N}
+    roles = [r.lower() for r in (available_roles or []) if str(r).strip()]
+    if not roles:
+        roles = ["builder", "planner", "checker", "refactor"]
+    role_set = set(roles)
+    roles_text = ", ".join(roles)
 
-Roles: builder, planner, checker, researcher
-"""
+    role_policy_lines: List[str] = [
+        "**Role Trigger Rules (query-driven, not fixed combo):**",
+        "- Always choose the MINIMAL set of roles needed for this specific query.",
+        "- Do not always return the same default role combination.",
+        "- roles MUST be a subset of Available roles.",
+    ]
+    if "builder" in role_set:
+        role_policy_lines.append(
+            "- Use `builder` when implementation/coding is required (usually required for code tasks)."
+        )
+    if "planner" in role_set:
+        role_policy_lines.append(
+            "- Use `planner` when task needs decomposition, algorithm choice, dependency ordering, or multi-step reasoning."
+        )
+    if "checker" in role_set:
+        role_policy_lines.append(
+            "- Use `checker` when correctness risk is high: edge cases, invariants, boundary checks, or explicit verification needs."
+        )
+    if "refactor" in role_set:
+        role_policy_lines.append(
+            "- Use `refactor` as a SECOND-PASS role for complex generation when first-pass code is likely suboptimal and needs cleanup/restructure/readability/performance improvement while preserving behavior."
+        )
+        role_policy_lines.append(
+            "- Do NOT add `refactor` for simple one-pass tasks unless the query explicitly asks for optimization/refinement."
+        )
+
+    role_policy_lines.append(
+        "- Prefer `single` with one role only for truly simple tasks; otherwise add roles only when justified by query complexity."
+    )
+    role_policy = "\n".join(role_policy_lines)
+
+    base_prompt = (
+        "You are a meta-router for code development. Decide the best topology.\n"
+        "Return JSON: {\"topology\": \"...\", \"roles\": [...], \"manager_role\": \"...\", "
+        "\"entry_role\": \"...\", \"max_steps\": N}\n\n"
+        f"Available roles: {roles_text}\n"
+    )
 
     if strategy == "single_preference":
         # Current behavior - strongly prefer single agent
@@ -76,7 +114,7 @@ Roles: builder, planner, checker, researcher
 2. "centralized": Complex algos (DP/graphs), multi-phase, edge cases
 3. "decentralized" (RARE): Parallel tasks, agents set next_role
 
-**Roles:** single=["builder"], centralized=["planner","builder"](+checker), decentralized=2-3 no mgr
+**Roles:** single=["builder"], centralized=["planner","builder"](+checker,+refactor), decentralized=2-3 no mgr
 **Steps:** single=1, centralized=2-3, decentralized=2-4
 **Rules:** single: entry_role="builder" mgr=null | centralized: mgr+entry="planner" | decentralized: mgr=null entry=1st. Default single.
 """
@@ -89,7 +127,7 @@ Roles: builder, planner, checker, researcher
 2. "centralized": Algos with planning needs (DP/graphs/recursion), conditions, edge cases, multi-step
 3. "decentralized": Parallel tasks, agents set next_role
 
-**Roles:** single=["builder"], centralized=["planner","builder"](+checker), decentralized=2-3 no mgr
+**Roles:** single=["builder"], centralized=["planner","builder"](+checker,+refactor), decentralized=2-3 no mgr
 **Steps:** single=1, centralized=2-4, decentralized=2-4
 **Rules:** single: entry="builder" mgr=null | centralized: mgr+entry="planner" | decentralized: mgr=null entry=1st.
 **Decision:** Choose based on complexity. Use single for straightforward implementations, centralized when planning/testing adds value.
@@ -103,7 +141,7 @@ Roles: builder, planner, checker, researcher
 2. "centralized" (RECOMMENDED): Standard for most algos, conditions, transforms, edge cases
 3. "decentralized": Parallel components, agents set next_role
 
-**Roles:** single=["builder"], centralized=["planner","builder"](+checker), decentralized=2-3 no mgr
+**Roles:** single=["builder"], centralized=["planner","builder"](+checker,+refactor), decentralized=2-3 no mgr
 **Steps:** single=1, centralized=2-4, decentralized=2-4
 **Rules:** single: entry="builder" mgr=null | centralized: mgr+entry="planner" | decentralized: mgr=null entry=1st.
 **Decision:** Prefer centralized for better code quality and planning. Reserve single for truly trivial implementations.
@@ -117,7 +155,7 @@ Roles: builder, planner, checker, researcher
 2. "centralized" (MANDATORY): All algorithmic tasks, all logic, all transformations
 3. "decentralized": Parallel independent components, agents set next_role
 
-**Roles:** single=["builder"](avoid), centralized=ALWAYS["planner","builder","checker"], decentralized=3-4 parallel
+**Roles:** single=["builder"](avoid), centralized=ALWAYS["planner","builder","checker"](+refactor when needed), decentralized=3-4 parallel
 **Steps:** single=1(rare), centralized=3-6, decentralized=3-6
 **Rules:** single: entry="builder" mgr=null | centralized: mgr+entry="planner" | decentralized: mgr=null entry=1st.
 **Decision:** Always use centralized for quality and robustness. Single only if implementation is completely trivial (e.g., return constant).
@@ -126,7 +164,7 @@ Roles: builder, planner, checker, researcher
     else:
         raise ValueError(f"Unknown strategy: {strategy}. Must be one of: single_preference, balanced, multi_preference, multi_aggressive")
     
-    return base_prompt + "\n" + topology_guide
+    return base_prompt + "\n" + role_policy + "\n\n" + topology_guide
 
 
 def _normalize_role(value: Any) -> str:
@@ -217,6 +255,75 @@ def _normalize_topology_label(label: Dict[str, Any], available_roles: List[str])
         "max_steps": int(max_steps) if max_steps else 1,
     }
 
+
+def _is_complex_task(problem: Dict[str, Any]) -> bool:
+    prompt = str(problem.get("prompt") or "").lower()
+    tests_preview = str(problem.get("tests_preview") or "").lower()
+    text = f"{prompt}\n{tests_preview}"
+
+    score = 0
+    if len(prompt) >= 110:
+        score += 1
+    if tests_preview.count("assert") >= 3:
+        score += 1
+
+    complexity_keywords = [
+        "dynamic programming",
+        "dp",
+        "graph",
+        "tree",
+        "recursion",
+        "binary search",
+        "heap",
+        "matrix",
+        "subsequence",
+        "subarray",
+        "optimiz",
+        "efficient",
+        "minimum",
+        "maximum",
+        "shortest",
+        "longest",
+        "lcs",
+        "inversion",
+    ]
+    if any(keyword in text for keyword in complexity_keywords):
+        score += 1
+
+    return score >= 2
+
+
+def _maybe_add_refactor_role(
+    label: Dict[str, Any], problem: Dict[str, Any], available_roles: List[str]
+) -> Dict[str, Any]:
+    if "refactor" not in available_roles:
+        return label
+    if not isinstance(label, dict):
+        return label
+
+    topology = str(label.get("topology") or "").lower()
+    roles = label.get("roles")
+    if not isinstance(roles, list):
+        return label
+
+    normalized_roles = [_normalize_role(r) for r in roles]
+    if topology != "centralized":
+        return label
+    if "refactor" in normalized_roles:
+        return label
+
+    # Centralized + checker usually indicates a second-pass polish opportunity.
+    # For other centralized cases, only add refactor when the task looks complex.
+    should_add = ("checker" in normalized_roles) or _is_complex_task(problem)
+    if not should_add:
+        return label
+
+    normalized_roles.append("refactor")
+    label["roles"] = normalized_roles
+    if label.get("max_steps") is None or int(label.get("max_steps") or 0) < 3:
+        label["max_steps"] = 3
+    return label
+
 def load_problems(file_paths: List[str], dataset: str = "humaneval") -> List[Dict[str, Any]]:
     problems = []
     for path in file_paths:
@@ -272,7 +379,7 @@ def generate_labels(
     client = LLMClient(model=model)
     
     # Get system prompt based on strategy
-    system_prompt = get_system_prompt(strategy)
+    system_prompt = get_system_prompt(strategy, available_roles)
     
     print(f"DEBUG: Using LLM API Base URL: {client.base_url}")
     print(f"Starting label generation for {len(problems)} problems using {model}...")
@@ -306,6 +413,7 @@ def generate_labels(
                 cleaned_response = response_text.replace("```json", "").replace("```", "").strip()
                 label_json = json.loads(cleaned_response)
                 label_json = _normalize_topology_label(label_json, available_roles)
+                label_json = _maybe_add_refactor_role(label_json, prob, available_roles)
 
                 # Construct Training Sample
                 training_sample = {
@@ -343,7 +451,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--roles",
         type=str,
-        default="builder,planner,checker,researcher",
+        default="builder,planner,checker,refactor",
         help="comma-separated available roles to constrain the label output",
     )
     parser.add_argument(

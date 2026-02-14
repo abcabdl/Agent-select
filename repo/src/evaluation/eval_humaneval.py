@@ -150,6 +150,23 @@ def _load_selections(log_path: Optional[str], registry) -> Dict[str, str]:
         return selections
     return selections
 
+
+def _align_selected_agents(topology_info: Dict[str, Any], selections: Dict[str, str]) -> Dict[str, Optional[str]]:
+    aligned: Dict[str, Optional[str]] = {}
+    roles = topology_info.get("roles")
+    if isinstance(roles, list):
+        for role in roles:
+            role_name = str(role or "").strip()
+            if not role_name:
+                continue
+            aligned[role_name] = selections.get(role_name) or None
+    for role, selected in selections.items():
+        role_name = str(role or "").strip()
+        if not role_name:
+            continue
+        aligned[role_name] = str(selected) if selected is not None else None
+    return aligned
+
 def _auto_generate_solutions_orchestrator(
     tasks: List[dict],
     out_path: str,
@@ -442,7 +459,11 @@ def _auto_generate_solutions_orchestrator(
             # Extract topology and agent selection info FIRST (before checking completion)
             topology_info = result.get("topology") or {"topology": "linear", "roles": roles}
             selections = _load_selections(result.get("log_path"), registry)
-            task_meta = {"topology": topology_info, "selected_agents": selections}
+            task_meta = {
+                "topology": topology_info,
+                "selected_agents": _align_selected_agents(topology_info, selections),
+                "forced_final_builder_executed": bool(result.get("forced_final_builder_executed")),
+            }
             if include_tool_trace and tool_trace is not None:
                 task_meta["tool_trace"] = json.loads(json.dumps(tool_trace, ensure_ascii=True, default=str))
             task_meta["workflow_time_s"] = round(workflow_elapsed, 3)
@@ -452,6 +473,9 @@ def _auto_generate_solutions_orchestrator(
             extraction_payload = dict(results)
             if tool_exec:
                 extraction_payload["tool_exec"] = tool_exec
+            extraction_payload["forced_final_builder_executed"] = bool(
+                result.get("forced_final_builder_executed")
+            )
             completion = _extract_code_from_results(
                 extraction_payload,
                 entry_point,
@@ -466,7 +490,12 @@ def _auto_generate_solutions_orchestrator(
                 if tool_trace and isinstance(tool_trace, dict):
                     # Reuse the main extractor on tool_exec for robust nested output handling.
                     completion = _extract_code_from_results(
-                        {"tool_exec": tool_trace},
+                        {
+                            "tool_exec": tool_trace,
+                            "forced_final_builder_executed": bool(
+                                result.get("forced_final_builder_executed")
+                            ),
+                        },
                         entry_point,
                         param_names=(func_sig.get("parameters") if isinstance(func_sig, dict) else None),
                     )

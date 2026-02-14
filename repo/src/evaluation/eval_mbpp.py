@@ -23,7 +23,7 @@ from evaluation import humaneval_postprocess
 
 _MBPP_SCORE_MARKER = "__MBPP_ASSERT_SCORE__"
 _MBPP_ASSERT_DIAG_MARKER = "__MBPP_ASSERT_DIAG__"
-_MBPP_POSTPROCESS_ROUNDS = 2
+_MBPP_POSTPROCESS_ROUNDS = 3
 _MBPP_PATCHED = False
 _MBPP_REPAIR_STYLE_RULES = (
     "Repair style rules: keep logic minimal and test-driven. "
@@ -40,6 +40,87 @@ _MBPP_INITIAL_GEN_RULES = (
     "Preserve required output order/type/shape. "
     "Do not add broad input validation or defensive exception branches unless asserts require them."
 )
+_MBPP_AUTO_IMPORT_MODULES = {
+    "cmath",
+    "math",
+    "re",
+    "json",
+    "itertools",
+    "collections",
+    "heapq",
+    "functools",
+    "statistics",
+    "random",
+    "bisect",
+    "string",
+    "operator",
+    "datetime",
+    "sys",
+    "array",
+    "copy",
+    "calendar",
+    "time",
+    "fractions",
+    "decimal",
+    "typing",
+}
+_MBPP_AUTO_IMPORT_SYMBOLS = {
+    "Counter": ("collections", "Counter"),
+    "defaultdict": ("collections", "defaultdict"),
+    "OrderedDict": ("collections", "OrderedDict"),
+    "deque": ("collections", "deque"),
+    "groupby": ("itertools", "groupby"),
+    "chain": ("itertools", "chain"),
+    "tee": ("itertools", "tee"),
+    "zip_longest": ("itertools", "zip_longest"),
+    "combinations": ("itertools", "combinations"),
+    "combinations_with_replacement": ("itertools", "combinations_with_replacement"),
+    "itemgetter": ("operator", "itemgetter"),
+    "eq": ("operator", "eq"),
+    "heappush": ("heapq", "heappush"),
+    "heappop": ("heapq", "heappop"),
+    "merge": ("heapq", "merge"),
+    "pi": ("math", "pi"),
+    "sin": ("math", "sin"),
+    "cos": ("math", "cos"),
+    "tan": ("math", "tan"),
+    "acos": ("math", "acos"),
+    "radians": ("math", "radians"),
+    "sqrt": ("math", "sqrt"),
+    "factorial": ("math", "factorial"),
+    "gcd": ("math", "gcd"),
+    "lcm": ("math", "lcm"),
+    "floor": ("math", "floor"),
+    "ceil": ("math", "ceil"),
+    "log": ("math", "log"),
+    "exp": ("math", "exp"),
+    "permutations": ("itertools", "permutations"),
+    "product": ("itertools", "product"),
+    "accumulate": ("itertools", "accumulate"),
+    "reduce": ("functools", "reduce"),
+    "cmp_to_key": ("functools", "cmp_to_key"),
+    "lru_cache": ("functools", "lru_cache"),
+    "choice": ("random", "choice"),
+    "shuffle": ("random", "shuffle"),
+    "randint": ("random", "randint"),
+    "sample": ("random", "sample"),
+    "mean": ("statistics", "mean"),
+    "median": ("statistics", "median"),
+    "mode": ("statistics", "mode"),
+    "stdev": ("statistics", "stdev"),
+    "ascii_lowercase": ("string", "ascii_lowercase"),
+    "ascii_uppercase": ("string", "ascii_uppercase"),
+    "bisect_left": ("bisect", "bisect_left"),
+    "bisect_right": ("bisect", "bisect_right"),
+    "insort": ("bisect", "insort"),
+    "List": ("typing", "List"),
+    "Tuple": ("typing", "Tuple"),
+    "Dict": ("typing", "Dict"),
+    "Set": ("typing", "Set"),
+    "Optional": ("typing", "Optional"),
+    "maxsize": ("sys", "maxsize"),
+    "deepcopy": ("copy", "deepcopy"),
+}
 
 
 def _strip_tasks_arg(argv: List[str]) -> List[str]:
@@ -586,6 +667,68 @@ def _collect_applied_tools(attempts: List[Dict[str, Any]]) -> List[str]:
     return ordered
 
 
+def _compare_small_scores(
+    current_passed: int,
+    current_total: int,
+    candidate_passed: int,
+    candidate_total: int,
+    *,
+    label: str,
+) -> Tuple[bool, str]:
+    if current_total != candidate_total:
+        return (
+            False,
+            f"{label}_incomparable_total_mismatch: "
+            f"current={current_passed}/{current_total}, "
+            f"{label}={candidate_passed}/{candidate_total}",
+        )
+    if candidate_passed > current_passed:
+        return (
+            True,
+            f"{label}_improved: "
+            f"current={current_passed}/{current_total}, "
+            f"{label}={candidate_passed}/{candidate_total}",
+        )
+    if candidate_passed == current_passed:
+        return (
+            False,
+            f"{label}_tied_no_gain: "
+            f"current={current_passed}/{current_total}, "
+            f"{label}={candidate_passed}/{candidate_total}",
+        )
+    return (
+        False,
+        f"{label}_regressed: "
+        f"current={current_passed}/{current_total}, "
+        f"{label}={candidate_passed}/{candidate_total}",
+    )
+
+
+def _normalize_mbpp_postprocess_meta(
+    post_meta: Dict[str, Any],
+    *,
+    attempted: bool,
+    small_score_before: str,
+) -> Dict[str, Any]:
+    attempts = post_meta.get("attempts")
+    if not isinstance(attempts, list):
+        attempts = []
+    normalized: Dict[str, Any] = {
+        "attempted": bool(post_meta.get("attempted", attempted or bool(attempts))),
+        "success": bool(post_meta.get("success", False)),
+        "small_score_before": str(post_meta.get("small_score_before", small_score_before)),
+        "attempts": attempts,
+    }
+    no_change_flag = post_meta.get("no_change")
+    if isinstance(no_change_flag, bool):
+        normalized["no_change"] = no_change_flag
+    elif attempts:
+        normalized["no_change"] = all(
+            isinstance(item, dict) and bool(item.get("no_change")) for item in attempts
+        )
+    return normalized
+
+
 def _extract_trace_candidates(task_meta: Dict[str, Any]) -> List[str]:
     tool_trace = task_meta.get("tool_trace") if isinstance(task_meta, dict) else None
     if not isinstance(tool_trace, dict):
@@ -866,6 +1009,151 @@ def _syntax_precheck(
         lineno = f" line {exc.lineno}" if exc.lineno else ""
         return f"{type(exc).__name__}: {exc.msg}{lineno}"
     return None
+
+
+def _extract_nameerror_identifier(error_text: str) -> Optional[str]:
+    text = str(error_text or "")
+    m = re.search(r"NameError:\s+name\s+'([^']+)'\s+is not defined", text)
+    if not m:
+        return None
+    name = str(m.group(1) or "").strip()
+    return name or None
+
+
+def _resolve_auto_import_spec(identifier: Optional[str]) -> Optional[Tuple[str, str, Optional[str]]]:
+    name = str(identifier or "").strip()
+    if not name:
+        return None
+    symbol_spec = _MBPP_AUTO_IMPORT_SYMBOLS.get(name)
+    if symbol_spec:
+        module, symbol = symbol_spec
+        return ("from", module, symbol)
+    if name in _MBPP_AUTO_IMPORT_MODULES:
+        return ("import", name, None)
+    return None
+
+
+def _inject_import_into_completion(
+    completion: str,
+    module: str,
+    symbol: Optional[str] = None,
+) -> str:
+    text = str(completion or "")
+    mod = str(module or "").strip()
+    sym = str(symbol or "").strip()
+    if not text.strip() or not mod:
+        return text
+    if sym:
+        if re.search(rf"(?m)^\s*from\s+{re.escape(mod)}\s+import\s+.*\b{re.escape(sym)}\b", text):
+            return text
+        import_line_body = f"from {mod} import {sym}"
+    else:
+        if re.search(rf"(?m)^\s*import\s+{re.escape(mod)}\b", text):
+            return text
+        if re.search(rf"(?m)^\s*from\s+{re.escape(mod)}\s+import\b", text):
+            return text
+        import_line_body = f"import {mod}"
+
+    lines = text.splitlines()
+    indent = "    "
+    for line in lines:
+        if not line.strip():
+            continue
+        leading = line[: len(line) - len(line.lstrip())]
+        indent = leading or "    "
+        break
+    import_line = f"{indent}{import_line_body}"
+    insert_idx = 0
+    while insert_idx < len(lines):
+        stripped = lines[insert_idx].strip()
+        if stripped and not stripped.startswith("#"):
+            break
+        insert_idx += 1
+    patched = lines[:insert_idx] + [import_line] + lines[insert_idx:]
+    return "\n".join(patched)
+
+
+def _run_mbpp_precheck_auto_repairs(
+    *,
+    prompt: str,
+    completion: str,
+    test_code: str,
+    entry_point: Optional[str],
+    timeout_s: float,
+) -> Tuple[str, Dict[str, Any]]:
+    current = str(completion or "")
+    meta: Dict[str, Any] = {
+        "attempted": bool(entry_point),
+        "auto_repairs": [],
+    }
+    if not entry_point or not current.strip():
+        return current, meta
+
+    normalized = humaneval_postprocess._fix_missing_indents(current, entry_point)
+    if normalized and normalized.strip() and normalized != current:
+        current = normalized
+        meta["auto_repairs"].append({"kind": "indent_normalize", "applied": True})
+
+    syntax_error = _syntax_precheck(prompt, current, entry_point)
+    if syntax_error and re.search(r"\b(IndentationError|TabError)\b", syntax_error):
+        retry = humaneval_postprocess._fix_missing_indents(current, entry_point)
+        if retry and retry.strip() and retry != current:
+            current = retry
+            meta["auto_repairs"].append(
+                {"kind": "indent_repair_after_error", "applied": True, "error": syntax_error}
+            )
+        syntax_error = _syntax_precheck(prompt, current, entry_point)
+
+    meta["syntax_error_after_auto_repair"] = syntax_error or ""
+
+    runtime_precheck_ran = bool(test_code)
+    meta["runtime_precheck_ran"] = runtime_precheck_ran
+    if not syntax_error and runtime_precheck_ran:
+        program = eval_humaneval._build_program(prompt, current, test_code, entry_point)
+        ok, stdout, stderr = _run_python_capture(program, timeout_s=timeout_s)
+        runtime_error = ((stderr or "") + "\n" + (stdout or "")).strip()
+        meta["runtime_precheck_ok"] = bool(ok)
+        if not ok and "NameError" in runtime_error:
+            missing = _extract_nameerror_identifier(runtime_error)
+            import_spec = _resolve_auto_import_spec(missing)
+            if import_spec:
+                _, module, symbol = import_spec
+                patched = _inject_import_into_completion(current, module, symbol=symbol)
+                patched = humaneval_postprocess._fix_missing_indents(patched, entry_point)
+                patched_syntax_error = _syntax_precheck(prompt, patched, entry_point)
+                if not patched_syntax_error:
+                    program2 = eval_humaneval._build_program(prompt, patched, test_code, entry_point)
+                    ok2, stdout2, stderr2 = _run_python_capture(program2, timeout_s=timeout_s)
+                    current = patched
+                    runtime_error2 = ((stderr2 or "") + "\n" + (stdout2 or "")).strip()
+                    meta["runtime_precheck_ok"] = bool(ok2)
+                    meta["auto_repairs"].append(
+                        {
+                            "kind": "nameerror_auto_import",
+                            "applied": True,
+                            "identifier": missing,
+                            "module": module,
+                            "symbol": symbol,
+                            "runtime_ok_after": bool(ok2),
+                        }
+                    )
+                    if runtime_error2:
+                        meta["runtime_error_after_auto_repair"] = _compact_text(runtime_error2, max_chars=500)
+                else:
+                    meta["auto_repairs"].append(
+                        {
+                            "kind": "nameerror_auto_import",
+                            "applied": False,
+                            "identifier": missing,
+                            "module": module,
+                            "symbol": symbol,
+                            "reason": patched_syntax_error,
+                        }
+                    )
+        if runtime_error:
+            meta["runtime_error"] = _compact_text(runtime_error, max_chars=500)
+
+    return current, meta
 
 
 def _repair_hard_gate_error(
@@ -1383,39 +1671,42 @@ def _postprocess_mbpp_solutions(
                         entry_point,
                         timeout_s=timeout_s,
                     )
-                    if current_total == 0:
-                        preferred_ok = preferred_total == 0
-                    else:
-                        preferred_ok = (
-                            preferred_total == current_total
-                            and preferred_passed > current_passed
-                        )
-                    if not preferred_ok:
-                        preferred_reason = (
-                            "small_score_regressed: "
-                            f"current={current_passed}/{current_total}, "
-                            f"preferred={preferred_passed}/{preferred_total}"
-                        )
+                    preferred_ok, preferred_reason = _compare_small_scores(
+                        current_passed,
+                        current_total,
+                        preferred_passed,
+                        preferred_total,
+                        label="preferred",
+                    )
                 if preferred_ok:
                     completion = preferred
                     solutions[name] = completion
                     task_meta["extracted_from"] = "tool_trace_non_checker_preferred"
                 else:
                     task_meta["non_checker_preferred_rejected"] = {
-                        "reason": preferred_reason or "small_score_regressed",
+                        "reason": preferred_reason or "preferred_tied_no_gain",
                         "role": non_checker_pick.get("role"),
                         "tool_id": non_checker_pick.get("tool_id"),
                     }
-        fixed_completion = humaneval_postprocess._fix_missing_indents(completion, entry_point)
-        if fixed_completion and fixed_completion.strip() and fixed_completion != completion:
-            completion = fixed_completion
-            solutions[name] = completion
+        precheck_before = completion
+        precheck_meta: Dict[str, Any] = {"attempted": bool(entry_point), "auto_repairs": []}
         precheck_error = None
-        precheck_meta: Dict[str, Any] = {"attempted": False}
         if entry_point:
+            auto_repaired, auto_meta = _run_mbpp_precheck_auto_repairs(
+                prompt=prompt,
+                completion=completion,
+                test_code=test_code,
+                entry_point=entry_point,
+                timeout_s=timeout_s,
+            )
+            if auto_repaired and auto_repaired.strip() and auto_repaired != completion:
+                completion = auto_repaired
+                solutions[name] = completion
+            if isinstance(auto_meta, dict):
+                precheck_meta.update(auto_meta)
             precheck_error = _syntax_precheck(prompt, completion, entry_point)
         if precheck_error:
-            repaired, precheck_meta = _postprocess_completion(
+            repaired, precheck_post_meta = _postprocess_completion(
                 prompt,
                 completion,
                 entry_point,
@@ -1424,10 +1715,13 @@ def _postprocess_mbpp_solutions(
             )
             precheck_meta["attempted"] = True
             precheck_meta["error"] = precheck_error
+            precheck_meta["postprocess"] = precheck_post_meta
             precheck_meta["changed"] = repaired.strip() != completion.strip()
             if repaired and repaired.strip():
                 completion = repaired
                 solutions[name] = completion
+        else:
+            precheck_meta["changed"] = completion.strip() != precheck_before.strip()
         task_meta["mbpp_precheck"] = precheck_meta
         small_passed = 0
         small_total = 0
@@ -1447,7 +1741,9 @@ def _postprocess_mbpp_solutions(
             "success": small_ok_before,
             "small_score_before": f"{small_passed}/{small_total}",
         }
+        post_attempted = False
         if not small_ok_before:
+            post_attempted = True
             repaired, post_meta = _postprocess_after_failure(
                 prompt,
                 completion,
@@ -1462,6 +1758,11 @@ def _postprocess_mbpp_solutions(
                 completion = repaired
                 solutions[name] = completion
 
+        post_meta = _normalize_mbpp_postprocess_meta(
+            post_meta,
+            attempted=post_attempted,
+            small_score_before=f"{small_passed}/{small_total}",
+        )
         task_meta["postprocess"] = post_meta
         task_meta["mbpp_postprocess"] = {
             "rounds": int(rounds),
@@ -1507,26 +1808,24 @@ def _postprocess_mbpp_solutions(
                             entry_point,
                             timeout_s=timeout_s,
                         )
-                        if current_total == 0:
-                            fallback_ok = chosen_total == 0
-                        else:
-                            fallback_ok = (
-                                chosen_total == current_total
-                                and chosen_passed > current_passed
-                            )
-                        if not fallback_ok:
-                            fallback_reason = (
-                                "small_score_regressed: "
-                                f"current={current_passed}/{current_total}, "
-                                f"fallback={chosen_passed}/{chosen_total}"
-                            )
+                        fallback_ok, fallback_reason = _compare_small_scores(
+                            current_passed,
+                            current_total,
+                            chosen_passed,
+                            chosen_total,
+                            label="fallback",
+                        )
                     if fallback_ok:
                         completion = chosen
                         solutions[name] = completion
                         last_pick["changed"] = True
+                        last_pick["applied_reason"] = fallback_reason
                     else:
                         last_pick["changed"] = False
-                        last_pick["rejected_reason"] = fallback_reason or "small_score_regressed"
+                        last_pick["rejected_reason"] = fallback_reason or "fallback_tied_no_gain"
+                else:
+                    last_pick["changed"] = False
+                    last_pick["rejected_reason"] = "fallback_tied_no_gain: same_code"
                 task_meta["mbpp_last_agent_fallback"] = last_pick
             else:
                 task_meta["mbpp_last_agent_fallback"] = {

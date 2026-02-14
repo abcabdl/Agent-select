@@ -124,7 +124,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--embedder_device", type=str, default=None)
     parser.add_argument("--embedder_normalize", action="store_true")
-    parser.add_argument("--roles", type=str, default="planner,researcher,builder,checker")
+    parser.add_argument("--roles", type=str, default="planner,builder,checker,refactor")
     parser.add_argument("--constraints", type=str, default="", help="JSON string per role")
     parser.add_argument("--workflow_version", type=str, default="v1")
     parser.add_argument("--top_n", type=int, default=20)

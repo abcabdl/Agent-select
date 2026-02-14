@@ -154,7 +154,7 @@ def parse_args() -> argparse.Namespace:
         default="agent_router",
         help="generate agent-routing data, meta-router data, or both",
     )
-    parser.add_argument("--roles", type=str, default="planner,researcher,builder,checker")
+    parser.add_argument("--roles", type=str, default="planner,builder,checker,refactor")
     parser.add_argument("--constraints", type=str, default="", help="JSON string per role")
     parser.add_argument("--db", type=str, default="demo_registry.sqlite")
     parser.add_argument("--index_dir", type=str, default="index")

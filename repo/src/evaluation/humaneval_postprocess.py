@@ -571,15 +571,15 @@ def _extract_code_from_results(
     role_priority = [
         "builder",
         "code-generation",
+        "refactor",
+        "refractor",
+        "code-refactoring",
         "planner",
         "code-planner",
         "researcher",
         "checker",
         "tester",
         "code-testing",
-        "refractor",
-        "refactor",
-        "code-refactoring",
     ]
 
     def _is_irrelevant(text: str) -> bool:
@@ -645,10 +645,58 @@ def _extract_code_from_results(
                         return hit
         return None
 
+    def _last_candidate(obj: Any) -> Optional[str]:
+        text = _normalize(obj, allow_string=False)
+        if text:
+            return text
+
+        if isinstance(obj, list):
+            for item in reversed(obj):
+                hit = _last_candidate(item)
+                if hit:
+                    return hit
+            return None
+
+        if isinstance(obj, dict):
+            for key in ("code_or_commands", "code", "solution"):
+                if key in obj:
+                    hit = _normalize(obj.get(key), allow_string=True)
+                    if hit:
+                        return hit
+            for key in ("output", "result"):
+                if key in obj:
+                    hit = _last_candidate(obj.get(key))
+                    if hit:
+                        return hit
+        return None
+
     code: Optional[str] = None
+    forced_final_builder = bool(results.get("forced_final_builder_executed"))
 
     trace_key = "tool_trace" if "tool_trace" in results else ("tool_exec" if "tool_exec" in results else None)
     reversed_roles = list(reversed(role_priority))
+
+    if forced_final_builder:
+        if trace_key:
+            tool_trace = results.get(trace_key)
+            if isinstance(tool_trace, dict):
+                for role in ("builder", "code-generation"):
+                    traces = tool_trace.get(role)
+                    if isinstance(traces, list):
+                        for trace in reversed(traces):
+                            result_obj = trace.get("result") if isinstance(trace, dict) else trace
+                            hit = _first_candidate(result_obj)
+                            if hit:
+                                code = hit
+                                break
+                    if code:
+                        break
+        if not code:
+            for role in ("builder", "code-generation"):
+                hit = _last_candidate(results.get(role))
+                if hit:
+                    code = hit
+                    break
 
     if trace_key:
         tool_trace = results.get(trace_key)

@@ -370,7 +370,7 @@ def run_demo(
     if domain_start or domain_limit:
         end = None if not domain_limit else domain_start + domain_limit
         domains = domains[domain_start:end]
-    roles = roles or ["planner", "researcher", "builder", "checker"]
+    roles = roles or ["planner", "builder", "checker", "refactor"]
 
     if reset_db and os.path.exists(db_path):
         os.remove(db_path)
@@ -710,7 +710,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tool_count", type=int, default=20)
     parser.add_argument("--domains", type=str, default="")
     parser.add_argument("--n_per_domain", type=int, default=40)
-    parser.add_argument("--roles", type=str, default="planner,researcher,builder,checker")
+    parser.add_argument("--roles", type=str, default="planner,builder,checker,refactor")
     parser.add_argument("--dim", type=int, default=64)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--embedder", type=str, default="sentence-transformer", help="dummy|sentence-transformer")

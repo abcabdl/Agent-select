@@ -30,6 +30,12 @@ class CheckerOutput(BaseModel):
     failure_localization: str
 
 
+class RefactorOutput(BaseModel):
+    runnable_plan: List[str]
+    code_or_commands: str
+    self_test: List[str]
+
+
 class ManagerOutput(BaseModel):
     status: str
     next_role: Optional[str] = None
@@ -43,8 +49,25 @@ _ROLE_MODELS: Dict[str, Type[BaseModel]] = {
     "researcher": ResearcherOutput,
     "builder": BuilderOutput,
     "checker": CheckerOutput,
+    "refactor": RefactorOutput,
     "manager": ManagerOutput,
 }
+
+_ROLE_ALIASES: Dict[str, str] = {
+    "code-generation": "builder",
+    "code-planner": "planner",
+    "code-testing": "checker",
+    "tester": "checker",
+    "code-refactoring": "refactor",
+    "refractor": "refactor",
+}
+
+
+def _normalize_role(role: str) -> str:
+    role_key = str(role or "").strip().lower()
+    if not role_key:
+        return ""
+    return _ROLE_ALIASES.get(role_key, role_key)
 
 
 def validate_output(
@@ -52,7 +75,7 @@ def validate_output(
     data: Any,
     allow_unknown: bool = False,
 ) -> Tuple[bool, List[str], Optional[BaseModel]]:
-    role_key = role.strip().lower()
+    role_key = _normalize_role(role)
     model_cls = _ROLE_MODELS.get(role_key)
     if model_cls is None:
         if allow_unknown:

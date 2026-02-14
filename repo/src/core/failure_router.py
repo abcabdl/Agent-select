@@ -1,14 +1,30 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+
+_ROLE_ALIASES = {
+    "code-generation": "builder",
+    "code-planner": "planner",
+    "code-testing": "checker",
+    "tester": "checker",
+    "code-refactoring": "refactor",
+    "refractor": "refactor",
+}
 
 
 def _is_empty_list(value: Any) -> bool:
     return not value or (isinstance(value, list) and len(value) == 0)
 
 
+def _normalize_role(role: str) -> str:
+    key = str(role or "").strip().lower()
+    if not key:
+        return ""
+    return _ROLE_ALIASES.get(key, key)
+
+
 def _missing_required_fields(role: str, output: Dict[str, Any]) -> bool:
-    role_key = role.strip().lower()
+    role_key = _normalize_role(role)
     if role_key == "planner":
         return _is_empty_list(output.get("steps")) or _is_empty_list(output.get("acceptance_criteria"))
     if role_key == "researcher":
@@ -17,7 +33,7 @@ def _missing_required_fields(role: str, output: Dict[str, Any]) -> bool:
             or _is_empty_list(output.get("sources"))
             or _is_empty_list(output.get("evidence_points"))
         )
-    if role_key == "builder":
+    if role_key in {"builder", "refactor"}:
         return (
             _is_empty_list(output.get("runnable_plan"))
             or not output.get("code_or_commands")
@@ -51,3 +67,4 @@ def route_failure(
         return {"failure_type": "B_missing_info", "action": "request_more_info"}
 
     return {"failure_type": "C_capability", "action": "workflow_update"}
+

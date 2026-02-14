@@ -8,8 +8,25 @@ _REQUIRED_FIELDS = {
     "planner": ["steps", "acceptance_criteria"],
     "researcher": ["search_queries", "sources", "evidence_points"],
     "builder": ["runnable_plan", "code_or_commands", "self_test"],
+    "refactor": ["runnable_plan", "code_or_commands", "self_test"],
     "checker": ["test_cases", "verdicts", "failure_localization"],
 }
+
+_ROLE_ALIASES = {
+    "code-generation": "builder",
+    "code-planner": "planner",
+    "code-testing": "checker",
+    "tester": "checker",
+    "code-refactoring": "refactor",
+    "refractor": "refactor",
+}
+
+
+def _normalize_role(role: str) -> str:
+    key = str(role or "").strip().lower()
+    if not key:
+        return ""
+    return _ROLE_ALIASES.get(key, key)
 
 
 class MockLLMClient:
@@ -22,7 +39,7 @@ class MockLLMClient:
         constraints: Optional[Dict[str, Any]],
         candidate: Dict[str, Any],
     ) -> Dict[str, Any]:
-        role_key = role.strip().lower()
+        role_key = _normalize_role(role)
         brief_tags = candidate.get("brief_tags", {})
         tag_snippet = ", ".join(sum([brief_tags.get("domain_tags", []), brief_tags.get("tool_tags", [])], []))
         if role_key == "planner":
@@ -41,6 +58,12 @@ class MockLLMClient:
                 "runnable_plan": ["Implement core changes", f"Integrate {tag_snippet}"],
                 "code_or_commands": "run build",
                 "self_test": ["unit tests", "smoke tests"],
+            }
+        if role_key == "refactor":
+            return {
+                "runnable_plan": ["Apply minimal refactor", f"Preserve behavior with {tag_snippet}"],
+                "code_or_commands": "run refactor",
+                "self_test": ["regression tests", "smoke tests"],
             }
         if role_key == "checker":
             return {
@@ -64,7 +87,7 @@ def _flatten_constraints(constraints: Optional[Dict[str, Any]]) -> List[str]:
 
 
 def _field_score(role: str, output: Dict[str, Any]) -> int:
-    required = _REQUIRED_FIELDS.get(role.strip().lower(), [])
+    required = _REQUIRED_FIELDS.get(_normalize_role(role), [])
     score = 0
     for field in required:
         value = output.get(field)
