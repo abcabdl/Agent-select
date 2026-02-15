@@ -110,6 +110,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--topology_config", type=str, default="", help="JSON string or path to JSON file")
     parser.add_argument("--max_steps", type=int, default=6)
+    parser.add_argument(
+        "--disable_postprocess_repair",
+        action="store_true",
+        help="disable orchestrator postprocess repair chain after tool test failures",
+    )
+    parser.add_argument(
+        "--allow_early_finish",
+        action="store_true",
+        help="allow router/agent to finish early even if no success signal was observed",
+    )
     parser.add_argument("--allow_unknown_roles", action="store_true")
     parser.add_argument("--no_reuse_role_selection", action="store_true")
     parser.add_argument(
@@ -284,6 +294,8 @@ def main() -> None:
             meta_router_llm_client=meta_router_llm,
             next_role_llm_client=next_role_llm,
             max_steps=args.max_steps,
+            enable_postprocess_repair=not args.disable_postprocess_repair,
+            prevent_early_finish=not args.allow_early_finish,
             allow_unknown_roles=args.allow_unknown_roles,
             reuse_role_selection=not args.no_reuse_role_selection,
             reuse_same_role_agent_once=args.reuse_same_role_agent_once,

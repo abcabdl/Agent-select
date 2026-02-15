@@ -1495,6 +1495,7 @@ def _plan_and_run_tools(
     results: Dict[str, Any],
     tool_max_rounds: int,
     tool_only: bool,
+    enable_postprocess_repair: bool = True,
     task_context: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     tool_history: List[Dict[str, Any]] = []
@@ -1948,48 +1949,58 @@ def _plan_and_run_tools(
                                     print(f"[DEBUG] Test FAILED: {test_error[:200]}, retrying...", file=sys.stderr)
                                     print(f"[DEBUG] Tool category '{tool_category}' failures: {tool_category_counts[tool_category]}, consecutive: {consecutive_same_category_failures}", file=sys.stderr)
                                     
-                                    repair_llm = _resolve_repair_llm(llm, tool_executor)
-                                    post_ok, post_error, post_code = _postprocess_tool_failure(
-                                        code,
-                                        task_context,
-                                        test_error,
-                                        repair_llm,
-                                        timeout_s=5.0,
-                                    )
-                                    if post_ok:
-                                        successful_code = post_code
-                                        test_passed = True
-                                        has_errors = False
-                                        failed_code = None
-                                        last_error = None
-                                        last_test_error = None
-                                        original_test_error = None
-                                        latest_test_error = None
-                                        postprocess_error = None
-                                        role_context["test_passed"] = True
-                                        role_context.pop("diagnostics", None)
-                                        
-                                        print(
-                                            f"[DEBUG] Postprocess+LLM repair fixed tool {tool_id} at round {round_idx}",
-                                            file=sys.stderr,
+                                    if enable_postprocess_repair and _should_attempt_postprocess_repair(test_error):
+                                        base_test_error = original_test_error or last_test_error or test_error
+                                        repair_llm = _resolve_repair_llm(llm, tool_executor)
+                                        post_ok, post_error, post_code = _postprocess_tool_failure(
+                                            code,
+                                            task_context,
+                                            test_error,
+                                            repair_llm,
+                                            timeout_s=5.0,
                                         )
-                                        
-                                        tool_history.append(
-                                            {
-                                                "tool_id": tool_id,
-                                                "input": tool_input,
-                                                "result": tool_result,
-                                                "reason": decision.get("reason") or ("tool_only_forced" if forced else None),
-                                            }
-                                        )
-                                        if tool_history:
-                                            role_context["tool_history"] = tool_history
-                                        return tool_history
-                                    else:
-                                        failed_code = post_code or failed_code
-                                        last_error = f"Postprocess failed: {post_error}"
-                                        latest_test_error = post_error
+                                        if post_ok:
+                                            successful_code = post_code
+                                            test_passed = True
+                                            has_errors = False
+                                            failed_code = None
+                                            last_error = None
+                                            last_test_error = None
+                                            original_test_error = None
+                                            latest_test_error = None
+                                            postprocess_error = None
+                                            role_context["test_passed"] = True
+                                            role_context.pop("diagnostics", None)
+                                            
+                                            print(
+                                                f"[DEBUG] Postprocess+LLM repair fixed tool {tool_id} at round {round_idx}",
+                                                file=sys.stderr,
+                                            )
+                                            
+                                            tool_history.append(
+                                                {
+                                                    "tool_id": tool_id,
+                                                    "input": tool_input,
+                                                    "result": tool_result,
+                                                    "reason": decision.get("reason") or ("tool_only_forced" if forced else None),
+                                                }
+                                            )
+                                            if tool_history:
+                                                role_context["tool_history"] = tool_history
+                                            return tool_history
+
                                         postprocess_error = post_error
+                                        latest_test_error = post_error
+                                        if _is_postprocess_degradation(base_test_error, post_error):
+                                            print(
+                                                "[DEBUG] Postprocess degraded failure type; keep original failure context",
+                                                file=sys.stderr,
+                                            )
+                                            failed_code = failed_code or code
+                                            last_error = f"Test failed: {base_test_error}"
+                                        else:
+                                            failed_code = post_code or failed_code
+                                            last_error = f"Postprocess failed: {post_error}"
                                         failure_summary = _summarize_failure(last_error, original_test_error or last_test_error)
                                         role_context["diagnostics"] = {
                                             "test_error": original_test_error or last_test_error or post_error,
@@ -2000,6 +2011,13 @@ def _plan_and_run_tools(
                                             "postprocess_error": postprocess_error,
                                             "failure_summary": failure_summary,
                                         }
+                                    elif enable_postprocess_repair:
+                                        print(
+                                            f"[DEBUG] Skipping postprocess repair for failure type: {_classify_error_message(test_error)}",
+                                            file=sys.stderr,
+                                        )
+                                    else:
+                                        print("[DEBUG] Postprocess repair disabled by configuration", file=sys.stderr)
                             else:
                                 # No test available, accept code based on success flag
                                 # Mark as successful but continue to allow LLM to decide when to stop
@@ -2246,6 +2264,48 @@ def _looks_like_syntax_error(message: str) -> bool:
     if not message:
         return False
     return any(token in message for token in ("SyntaxError", "IndentationError", "TabError"))
+
+
+def _classify_error_message(message: Optional[str]) -> str:
+    text = str(message or "").strip().lower()
+    if not text:
+        return "unknown"
+    if "assertionerror" in text or " assert " in f" {text} ":
+        return "assertion"
+    if any(token in text for token in ("syntaxerror", "indentationerror", "taberror")):
+        return "syntax"
+    if "timeout" in text or "timed out" in text:
+        return "timeout"
+    if "nameerror" in text:
+        return "name"
+    if "typeerror" in text:
+        return "type"
+    if "indexerror" in text:
+        return "index"
+    if "keyerror" in text:
+        return "key"
+    if "attributeerror" in text:
+        return "attribute"
+    if "valueerror" in text:
+        return "value"
+    return "runtime"
+
+
+def _should_attempt_postprocess_repair(error_message: Optional[str]) -> bool:
+    kind = _classify_error_message(error_message)
+    return kind not in {"assertion", "unknown"}
+
+
+def _is_postprocess_degradation(original_error: Optional[str], postprocess_error: Optional[str]) -> bool:
+    original_kind = _classify_error_message(original_error)
+    repaired_kind = _classify_error_message(postprocess_error)
+    if repaired_kind == "unknown":
+        return False
+    if repaired_kind == "syntax" and original_kind != "syntax":
+        return True
+    if repaired_kind == "timeout" and original_kind not in {"timeout", "unknown"}:
+        return True
+    return False
 
 
 def _repair_completion(completion: str, entry_point: Optional[str]) -> str:
@@ -2588,6 +2648,7 @@ def _execute_role_with_selection(
     extra_context: Optional[Dict[str, Any]] = None,
     tool_max_rounds: int = 10,
     tool_only: bool = False,
+    enable_postprocess_repair: bool = True,
     task_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     selected_main = selection.get("selected_main")
@@ -2616,6 +2677,7 @@ def _execute_role_with_selection(
         results=results,
         tool_max_rounds=tool_max_rounds,
         tool_only=tool_only,
+        enable_postprocess_repair=enable_postprocess_repair,
         task_context=task_context,
     )
 
@@ -2993,21 +3055,57 @@ def _plan_topology(
                 llm_steps = max(1, min(llm_steps, int(max_steps)))
                 data["max_steps"] = llm_steps
             
-            # UPDATED: Trust LoRA's role selection, but validate roles are in available list
-            # If LoRA returns roles, validate them against available roles list
-            if "roles" in data and isinstance(data["roles"], list):
-                llm_roles = [r.lower().strip() for r in data["roles"] if r]
-                # Filter to only roles that exist in our available roles
-                valid_roles = [r for r in llm_roles if r in roles]
-                # If LoRA returned valid roles, use them; otherwise fallback to user-specified
-                if valid_roles:
-                    data["roles"] = valid_roles
+            # Trust LoRA role selection, but robustly normalize/validate role formats.
+            # Accept roles as list, string, or {"manager": ..., "workers": [...]}.
+            available_role_map: Dict[str, str] = {}
+            for raw_role in roles:
+                key = _normalize_role_name(raw_role)
+                if key and key not in available_role_map:
+                    available_role_map[key] = str(raw_role)
+
+            raw_roles = data.get("roles")
+            llm_roles_raw: List[Any] = []
+            if isinstance(raw_roles, dict):
+                mgr = raw_roles.get("manager")
+                workers = raw_roles.get("workers")
+                if mgr is not None:
+                    llm_roles_raw.append(mgr)
+                if isinstance(workers, list):
+                    llm_roles_raw.extend(workers)
+            elif isinstance(raw_roles, list):
+                llm_roles_raw = list(raw_roles)
+            elif isinstance(raw_roles, str):
+                llm_roles_raw = [raw_roles]
+
+            valid_roles: List[str] = []
+            seen_roles: set[str] = set()
+            for item in llm_roles_raw:
+                key = _normalize_role_name(str(item) if item is not None else "")
+                mapped = available_role_map.get(key)
+                if not mapped or mapped in seen_roles:
+                    continue
+                seen_roles.add(mapped)
+                valid_roles.append(mapped)
+
+            data["roles"] = valid_roles if valid_roles else roles
+
+            # Normalize optional role fields from LLM output.
+            if "entry_role" in data:
+                entry_norm = _normalize_role_name(str(data.get("entry_role") or ""))
+                mapped_entry = available_role_map.get(entry_norm)
+                if mapped_entry:
+                    data["entry_role"] = mapped_entry
                 else:
-                    data["roles"] = roles  # Fallback if LoRA returned invalid roles
-            else:
-                data["roles"] = roles  # Use user-specified if LoRA didn't return roles
-            
-            # If strict_roles=True and LLM set entry_role to something not in our roles list, clear it
+                    data.pop("entry_role", None)
+            if "manager_role" in data:
+                manager_norm = _normalize_role_name(str(data.get("manager_role") or ""))
+                mapped_manager = available_role_map.get(manager_norm)
+                if mapped_manager:
+                    data["manager_role"] = mapped_manager
+                else:
+                    data.pop("manager_role", None)
+
+            # If strict_roles=True and LLM set entry_role to something not in selected roles, clear it.
             if strict_roles and "entry_role" in data and data["entry_role"] not in data["roles"]:
                 del data["entry_role"]  # Let normalized() pick from roles list
             return TopologyConfig(**data).normalized(default_roles=roles)
@@ -3025,6 +3123,7 @@ def _select_next_role(
     llm: Optional[LLMClient],
     avoid_role: Optional[str] = None,
     force_role: Optional[str] = None,
+    prevent_early_finish: bool = True,
 ) -> Optional[str]:
     if not available_roles:
         return None
@@ -3079,7 +3178,13 @@ def _select_next_role(
         if isinstance(candidate, str):
             candidate = candidate.strip()
             if candidate.lower() in ("finish", "none"):
-                return None
+                if task_completed or not prevent_early_finish:
+                    return None
+                print(
+                    "[WARNING] Router requested early finish before success; ignoring and continuing",
+                    file=sys.stderr,
+                )
+                candidate = ""
             if candidate in available_roles:
                 if avoid_role and candidate == avoid_role and len(available_roles) > 1:
                     for role in available_roles:
@@ -3103,6 +3208,23 @@ def _select_next_role(
             if avoid_role and role_name == avoid_role and len(available_roles) > 1:
                 continue
             return role_name
+    for role in available_roles:
+        if role != avoid_role:
+            return role
+    return available_roles[0]
+
+
+def _fallback_next_role(available_roles: List[str], avoid_role: Optional[str] = None) -> Optional[str]:
+    if not available_roles:
+        return None
+    preferred = ("checker", "builder")
+    for wanted in preferred:
+        for role in available_roles:
+            if _normalize_role_name(role) != wanted:
+                continue
+            if avoid_role and role == avoid_role and len(available_roles) > 1:
+                continue
+            return role
     for role in available_roles:
         if role != avoid_role:
             return role
@@ -3197,6 +3319,8 @@ def _run_dynamic_workflow(
     max_steps: int,
     force_final_builder_extra_step: bool,
     allow_unknown_roles: bool,
+    enable_postprocess_repair: bool,
+    prevent_early_finish: bool,
     reuse_role_selection: bool,
     reuse_same_role_agent_once: bool,
     summary_max_chars: int,
@@ -3384,6 +3508,7 @@ def _run_dynamic_workflow(
             meta=meta,
             extra_context=extra_context,
             tool_only=use_tool_only,
+            enable_postprocess_repair=enable_postprocess_repair,
             task_context=task_context,
         )
         log_path_local = exec_result.get("log_path")
@@ -3462,10 +3587,23 @@ def _run_dynamic_workflow(
                 llm=next_role_llm_client,
                 force_role=force_role,
                 avoid_role=avoid_role,  # Try to avoid repeating the same worker unless planner isn't ready
+                prevent_early_finish=prevent_early_finish,
             )
             if not next_role:
-                print(f"[DEBUG] No more workers to try, stopping CENTRALIZED workflow", file=sys.stderr)
-                break
+                task_completed = workflow_succeeded or any(
+                    item.get("test_passed") or item.get("status") == "success" for item in history
+                )
+                if prevent_early_finish and not task_completed:
+                    fallback_role = _fallback_next_role(candidate_roles, avoid_role=avoid_role)
+                    if fallback_role:
+                        print(
+                            f"[DEBUG] Router returned finish early; fallback to role '{fallback_role}'",
+                            file=sys.stderr,
+                        )
+                        next_role = fallback_role
+                if not next_role:
+                    print(f"[DEBUG] No more workers to try, stopping CENTRALIZED workflow", file=sys.stderr)
+                    break
             if next_role == manager:
                 manager_output = _execute_role(
                     manager,
@@ -3555,8 +3693,18 @@ def _run_dynamic_workflow(
                         print(f"[DEBUG] Agent {current_role} suggested next_role: {agent_suggested_role}", file=sys.stderr)
                         next_role = agent_suggested_role
                     elif agent_suggested_role == "finish":
-                        print(f"[DEBUG] Agent {current_role} requested finish", file=sys.stderr)
-                        next_role = None
+                        task_completed = workflow_succeeded or any(
+                            item.get("test_passed") or item.get("status") == "success" for item in history
+                        )
+                        if prevent_early_finish and not task_completed:
+                            print(
+                                f"[WARNING] Agent {current_role} requested finish before success; ignoring",
+                                file=sys.stderr,
+                            )
+                            agent_suggested_role = None
+                        else:
+                            print(f"[DEBUG] Agent {current_role} requested finish", file=sys.stderr)
+                            next_role = None
                     else:
                         print(f"[WARNING] Agent suggested invalid next_role '{agent_suggested_role}', not in {candidates}. Using router.", file=sys.stderr)
                         agent_suggested_role = None
@@ -3578,10 +3726,23 @@ def _run_dynamic_workflow(
                     llm=next_role_llm_client,
                     avoid_role=avoid_role,
                     force_role=force_role,
+                    prevent_early_finish=prevent_early_finish,
                 )
             
             if not next_role:
-                break
+                task_completed = workflow_succeeded or any(
+                    item.get("test_passed") or item.get("status") == "success" for item in history
+                )
+                if prevent_early_finish and not task_completed:
+                    fallback_role = _fallback_next_role(candidates, avoid_role=avoid_role)
+                    if fallback_role:
+                        print(
+                            f"[DEBUG] Router returned finish early; fallback to role '{fallback_role}'",
+                            file=sys.stderr,
+                        )
+                        next_role = fallback_role
+                if not next_role:
+                    break
             current_role = next_role
 
     last_history = history[-1] if history else {}
@@ -3657,6 +3818,8 @@ def run_workflow(
     max_steps: int = 6,
     force_final_builder_extra_step: bool = True,
     allow_unknown_roles: bool = False,
+    enable_postprocess_repair: bool = True,
+    prevent_early_finish: bool = True,
     reuse_role_selection: bool = True,
     reuse_same_role_agent_once: bool = False,
     summary_max_chars: int = 400,
@@ -3744,6 +3907,8 @@ def run_workflow(
             max_steps=max_steps,
             force_final_builder_extra_step=force_final_builder_extra_step,
             allow_unknown_roles=allow_unknown_roles or dynamic_mode,
+            enable_postprocess_repair=enable_postprocess_repair,
+            prevent_early_finish=prevent_early_finish,
             force_role=force_role,
             reuse_role_selection=reuse_role_selection,
             reuse_same_role_agent_once=reuse_same_role_agent_once,
@@ -3875,6 +4040,7 @@ def run_workflow(
             results=results,
             tool_max_rounds=5,  # Reduced from 10 to allow faster agent switching
             tool_only=tool_only,
+            enable_postprocess_repair=enable_postprocess_repair,
             task_context=task_context,
         )
         if tool_only:

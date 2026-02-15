@@ -230,6 +230,8 @@ def _auto_generate_solutions_orchestrator(
     mcts_discount: float,
     mcts_max_candidates: int,
     max_attempts: int,
+    enable_postprocess_repair: bool,
+    prevent_early_finish: bool,
     baseline_fixed_bcb_mcts: bool,
     baseline_fixed_bcb_router_gpt4o: bool,
     dynamic_workflow_router_gpt4o: bool,
@@ -339,14 +341,30 @@ def _auto_generate_solutions_orchestrator(
                 params = func_sig["parameters"]
                 param_hint = f"\nParameter names: {', '.join(params)}. Use these exact names in code.\n"
 
+            is_mbpp_task = str(task.get("source") or "").strip().lower() == "mbpp"
+            if is_mbpp_task:
+                requirements_text = (
+                    "Put the implementation in JSON field `code_or_commands` as runnable function-body code only.\n"
+                    "Requirements:\n"
+                    "1. Use exact parameter names from the function signature (no generic names like data/items/input_string).\n"
+                    "2. Prioritize passing the provided asserts exactly.\n"
+                    "3. Keep logic minimal and test-driven; avoid broad defensive validation/exception branches unless asserts require them.\n"
+                    "4. Generate direct solution code only; avoid unrelated parsing/template boilerplate.\n"
+                    "5. Ensure the logic is correct.\n"
+                )
+            else:
+                requirements_text = (
+                    "Put the implementation in JSON field `code_or_commands` as runnable function-body code only.\n"
+                    "Requirements:\n"
+                    "1. Use exact parameter names from the function signature (no generic names like data/items/input_string).\n"
+                    "2. Handle edge cases: empty input ([], '', None), single element, and boundary values (0, 1).\n"
+                    "3. Generate direct solution code only; avoid unrelated parsing/template boilerplate.\n"
+                    "4. Ensure the logic is correct.\n"
+                )
+
             task_text = (
                 f"{prompt}\n\n"
-                "Put the implementation in JSON field `code_or_commands` as runnable function-body code only.\n"
-                "Requirements:\n"
-                "1. Use exact parameter names from the function signature (no generic names like data/items/input_string).\n"
-                "2. Handle edge cases: empty input ([], '', None), single element, and boundary values (0, 1).\n"
-                "3. Generate direct solution code only; avoid unrelated parsing/template boilerplate.\n"
-                "4. Ensure the logic is correct.\n"
+                f"{requirements_text}"
                 f"{param_hint}"
             )
 
@@ -449,6 +467,8 @@ def _auto_generate_solutions_orchestrator(
                 mcts_max_candidates=mcts_max_candidates,
                 force_role=force_role,
                 strict_roles=strict_roles,
+                enable_postprocess_repair=enable_postprocess_repair,
+                prevent_early_finish=prevent_early_finish,
             )
             workflow_elapsed = time.perf_counter() - workflow_started
 
@@ -701,6 +721,16 @@ def parse_args() -> argparse.Namespace:
         default=1,
         help="postprocess repair rounds after initial failure",
     )
+    parser.add_argument(
+        "--disable_orchestrator_postprocess_repair",
+        action="store_true",
+        help="disable orchestrator postprocess repair chain after tool test failures",
+    )
+    parser.add_argument(
+        "--allow_early_finish",
+        action="store_true",
+        help="allow router/agent to end workflow early even when no success signal exists",
+    )
     parser.add_argument("--mcts_dynamic_optimization", action="store_true")
     parser.add_argument("--mcts_iterations", type=int, default=64)
     parser.add_argument("--mcts_rollout_depth", type=int, default=4)
@@ -875,6 +905,8 @@ def main() -> None:
                     baseline_fixed_bcb_router_gpt4o=args.baseline_fixed_bcb_router_gpt4o,
                     dynamic_workflow_router_gpt4o=args.dynamic_workflow_router_gpt4o,
                     force_role=args.force_role or None,
+                    enable_postprocess_repair=not args.disable_orchestrator_postprocess_repair,
+                    prevent_early_finish=not args.allow_early_finish,
                 )
             else:
                 solutions = _auto_generate_solutions(

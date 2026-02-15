@@ -40,6 +40,16 @@ _MBPP_INITIAL_GEN_RULES = (
     "Preserve required output order/type/shape. "
     "Do not add broad input validation or defensive exception branches unless asserts require them."
 )
+_MBPP_STRICT_PROMPT_TEXT = (
+    "Output only the function body code with correct indentation. "
+    "Do not repeat function definition, explanation, or markdown fences.\n"
+    "Important constraints:\n"
+    "1. MUST use exact parameter names from function signature.\n"
+    "2. Prioritize satisfying provided asserts exactly.\n"
+    "3. Keep logic minimal and test-driven; avoid broad defensive input validation "
+    "or new exceptions unless asserts require them.\n"
+    "4. Generate only direct solution code; no unrelated parsing/template boilerplate.\n"
+)
 _MBPP_AUTO_IMPORT_MODULES = {
     "cmath",
     "math",
@@ -1482,7 +1492,20 @@ def _postprocess_after_failure(
                 failure_context=failure_context,
             )
             if repaired_llm and repaired_llm != current:
-                repaired_llm = humaneval_postprocess._fix_missing_indents(repaired_llm, entry_point)
+                normalized_llm = eval_humaneval._normalize_completion(
+                    humaneval_postprocess._strip_redundant_def(
+                        eval_humaneval._extract_code_block(str(repaired_llm)),
+                        entry_point,
+                    ),
+                    entry_point,
+                )
+                repaired_llm = humaneval_postprocess._fix_missing_indents(normalized_llm, entry_point)
+                if not repaired_llm.strip():
+                    llm_attempt["success"] = False
+                    llm_attempt["rejected"] = "empty_after_normalize"
+                    llm_attempt["final_error"] = "empty_after_normalize"
+                    attempts.append(llm_attempt)
+                    continue
                 gate_error = _repair_hard_gate_error(execution_prompt, repaired_llm, entry_point)
                 if gate_error:
                     llm_attempt["success"] = False
@@ -1855,6 +1878,9 @@ def _patch_eval_humaneval_for_mbpp() -> None:
 
         call_args = list(args)
         call_kwargs = dict(kwargs)
+        call_kwargs["strict_prompt"] = True
+        if not str(call_kwargs.get("strict_prompt_text") or "").strip():
+            call_kwargs["strict_prompt_text"] = _MBPP_STRICT_PROMPT_TEXT
         prepared_tasks = _prepare_mbpp_tasks_for_generation(tasks) if isinstance(tasks, list) else tasks
         if isinstance(prepared_tasks, list):
             if "tasks" in call_kwargs:
@@ -1893,6 +1919,9 @@ def _patch_eval_humaneval_for_mbpp() -> None:
 
         call_args = list(args)
         call_kwargs = dict(kwargs)
+        call_kwargs["strict_prompt"] = True
+        if not str(call_kwargs.get("strict_prompt_text") or "").strip():
+            call_kwargs["strict_prompt_text"] = _MBPP_STRICT_PROMPT_TEXT
         prepared_tasks = _prepare_mbpp_tasks_for_generation(tasks) if isinstance(tasks, list) else tasks
         if isinstance(prepared_tasks, list):
             if "tasks" in call_kwargs:
